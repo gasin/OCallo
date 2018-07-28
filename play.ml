@@ -119,22 +119,31 @@ let last_eval_board board color : int =
 
 let rec last_update_board board color depth best (i,j) : unit = 
   let ocolor = opposite_color color in
+  let emp = empty_count board in
   let flip_cells = flippable_indices board color (i,j) in
-  board.(i).(j) <- color;
-  List.iter (fun (ii,jj) -> (board.(ii).(jj) <- color);) flip_cells; 
-  let ret : int = if depth > 0 then -1*(fst (last_deep_search board ocolor (depth-1))) 
-                  else last_eval_board board color in
-  List.iter (fun (ii,jj) -> (board.(ii).(jj) <- ocolor);) flip_cells; 
-  board.(i).(j) <- none;
-  if (fst !best) < ret then  
-    best := (ret, (i,j))
-  else ();
-  if ret > 0 then raise End_loop else ()
+  if emp = 1 then
+    let ret : int = (last_eval_board board color) + 1 + (List.length flip_cells) * 2 in
+    if (fst !best) < ret then  
+      best := (ret, (i,j))
+    else ();
+    if ret > 0 then raise End_loop else ()
+  else
+    board.(i).(j) <- color;
+    List.iter (fun (ii,jj) -> (board.(ii).(jj) <- color);) flip_cells; 
+    let ret : int = if depth > 0 then -1*(fst (last_deep_search board ocolor (depth-1))) 
+                    else last_eval_board board color in
+    List.iter (fun (ii,jj) -> (board.(ii).(jj) <- ocolor);) flip_cells; 
+    board.(i).(j) <- none;
+    if (fst !best) < ret then  
+      best := (ret, (i,j))
+    else ();
+    if ret > 0 then raise End_loop else ()
 
  and last_deep_search board color depth : (int * (int * int)) =
   let ocolor = opposite_color color in
   let ms = valid_moves board color in 
-  if empty_count board = 0 then
+  let emp = empty_count board in
+  if emp = 0 then
     (last_eval_board board color, (-1, -1))
   else if List.length ms = 0 then
     if count board color = 0 then (-inf, (-1, -1))
@@ -167,7 +176,7 @@ let rec update_board board color depth prebest best (i,j) : unit =
   if (fst !best) < ret then  
     best := (ret, (i,j))
   else ();
-  if prebest <= -1*ret then
+  if prebest >= -1*ret then
     raise End_loop
   else ();
   ()
@@ -195,11 +204,11 @@ let play board color =
         let k = Random.int (List.length ms) in 
         let (i,j) = List.nth ms k in 
         Mv (i,j)
-      else if (empty_count board <= 14) then
+      else if (empty_count board <= 12) then
         let best = last_deep_search board color 30 in
         Mv ((fst (snd best)), (snd (snd best)))
       else 
-        let best = deep_search board color iinf 4 in
+        let best = deep_search board color (-1*iinf) 3 in
         Mv ((fst (snd best)), (snd (snd best)))
 
 let report_result board = 
