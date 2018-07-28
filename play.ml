@@ -2,6 +2,8 @@ open Array
 open Color 
 open Command 
 
+exception End_loop
+
 type board = color array array 
 
 let count board color : int = 
@@ -108,6 +110,39 @@ let cell_value_list = [| [| 30; -12; 0; -1; -1; 0; -12; 30 |];
                          [| -12; -15; -3; -3; -3; -3; -15; -12 |];
                          [| 30; -12; 0; -1; -1; 0; -12; 30 |] |]
 
+let last_eval_board board color : int =
+  let ocolor = opposite_color color in
+  (count board color) - (count board ocolor)
+
+let rec last_update_board board color depth best (i,j) : unit = 
+  let ocolor = opposite_color color in
+  let flip_cells = flippable_indices board color (i,j) in
+  board.(i).(j) <- color;
+  List.iter (fun (ii,jj) -> (board.(ii).(jj) <- color);) flip_cells; 
+  let ret : int = if depth > 0 then -1*(fst (last_deep_search board ocolor (depth-1))) 
+                  else last_eval_board board color in
+  List.iter (fun (ii,jj) -> (board.(ii).(jj) <- ocolor);) flip_cells; 
+  board.(i).(j) <- none;
+  if (fst !best) < ret then  
+    best := (ret, (i,j))
+  else ();
+  if ret > 0 then raise End_loop else ()
+
+ and last_deep_search board color depth : (int * (int * int)) =
+  let ocolor = opposite_color color in
+  let ms = valid_moves board color in 
+  if empty_count board = 0 then
+    (last_eval_board board color, (-1, -1))
+  else if List.length ms = 0 then
+    if count board color = 0 then (-100000, (-1, -1))
+    else ((if depth > 0 then -1*(fst (last_deep_search board ocolor (depth-1))) else last_eval_board board color), (-1,-1))
+  else
+    let best = ref (-100000, (-1,-1)) in 
+    (try
+      List.iter (last_update_board board color depth best) ms
+    with End_loop -> ());
+    !best
+
 let eval_board board color : int =
   let value = ref 0 in 
   let ocolor = opposite_color color in
@@ -117,30 +152,24 @@ let eval_board board color : int =
     done
   done; !value
 
-let last_eval_board board color : int =
-  let ocolor = opposite_color color in
-  (count board color) - (count board ocolor)
-
-let rec update_board board color depth last (i,j) : int =
+let rec update_board board color depth (i,j) : int =
   let ocolor = opposite_color color in
   let flip_cells = flippable_indices board color (i,j) in
   board.(i).(j) <- color;
   List.iter (fun (ii,jj) -> (board.(ii).(jj) <- color);) flip_cells; 
-  let ret : int = if depth > 0 then -1*(fst (deep_search board ocolor (depth-1) last)) 
-                  else if last = 0 then eval_board board color else last_eval_board board color in
+  let ret : int = if depth > 0 then -1*(fst (deep_search board ocolor (depth-1))) 
+                  else eval_board board color in
   List.iter (fun (ii,jj) -> (board.(ii).(jj) <- ocolor);) flip_cells; 
   board.(i).(j) <- none; ret
 
- and deep_search board color depth last : (int * int) =
+ and deep_search board color depth : (int * int) =
   let ocolor = opposite_color color in
   let ms = valid_moves board color in 
-  if empty_count board = 0 then
-    (last_eval_board board color, -1)
-  else if List.length ms = 0 then
-    if count board color = 0 then (-10000000, -1)
-    else ((if depth > 0 then -1*(fst (deep_search board ocolor (depth-1) last)) else if last = 0 then eval_board board color else last_eval_board board color), -1)
+  if List.length ms = 0 then
+    if count board color = 0 then (-100000, -1)
+    else ((if depth > 0 then -1*(fst (deep_search board ocolor (depth-1))) else eval_board board color), -1)
   else
-    let vals = List.map (update_board board color depth last) ms in
+    let vals = List.map (update_board board color depth) ms in
     get_list_max vals 0
 
 let play board color = 
@@ -149,11 +178,10 @@ let play board color =
       Pass 
     else 
       if (empty_count board <= 10) then
-        let best = deep_search board color 15 1 in
-        let (i,j) = List.nth ms (snd best) in 
-        Mv (i,j)
+        let best = last_deep_search board color 15 in
+        Mv ((fst (snd best)), (snd (snd best)))
       else 
-        let best = deep_search board color 3 0 in
+        let best = deep_search board color 3 in
         let (i,j) = List.nth ms (snd best) in 
         Mv (i,j)
 
