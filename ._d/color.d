@@ -1,2 +1,0 @@
-color.cmo :
-color.cmx :
