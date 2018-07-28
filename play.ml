@@ -6,6 +6,9 @@ exception End_loop
 
 type board = color array array 
 
+let iinf = 1000000000000000
+let inf  = 1000000000000
+
 let count board color : int = 
   let s = ref 0 in 
     for i=1 to 8 do 
@@ -134,10 +137,10 @@ let rec last_update_board board color depth best (i,j) : unit =
   if empty_count board = 0 then
     (last_eval_board board color, (-1, -1))
   else if List.length ms = 0 then
-    if count board color = 0 then (-100000, (-1, -1))
+    if count board color = 0 then (-inf, (-1, -1))
     else ((if depth > 0 then -1*(fst (last_deep_search board ocolor (depth-1))) else last_eval_board board color), (-1,-1))
   else
-    let best = ref (-100000, (-1,-1)) in 
+    let best = ref (-iinf, (-1,-1)) in 
     (try
       List.iter (last_update_board board color depth best) ms
     with End_loop -> ());
@@ -152,38 +155,48 @@ let eval_board board color : int =
     done
   done; !value
 
-let rec update_board board color depth (i,j) : int =
+let rec update_board board color depth prebest best (i,j) : unit =
   let ocolor = opposite_color color in
   let flip_cells = flippable_indices board color (i,j) in
   board.(i).(j) <- color;
   List.iter (fun (ii,jj) -> (board.(ii).(jj) <- color);) flip_cells; 
-  let ret : int = if depth > 0 then -1*(fst (deep_search board ocolor (depth-1))) 
+  let ret : int = if depth > 0 then -1*(fst (deep_search board ocolor (fst !best) (depth-1))) 
                   else eval_board board color in
   List.iter (fun (ii,jj) -> (board.(ii).(jj) <- ocolor);) flip_cells; 
-  board.(i).(j) <- none; ret
+  board.(i).(j) <- none;
+  if (fst !best) < ret then  
+    best := (ret, (i,j))
+  else ();
+  if prebest <= -1*ret then
+    raise End_loop
+  else ();
+  ()
 
- and deep_search board color depth : (int * int) =
+ and deep_search board color prebest depth : (int * (int * int)) =
   let ocolor = opposite_color color in
   let ms = valid_moves board color in 
   if List.length ms = 0 then
-    if count board color = 0 then (-100000, -1)
-    else ((if depth > 0 then -1*(fst (deep_search board ocolor (depth-1))) else eval_board board color), -1)
+    if count board color = 0 then (-inf, (-1,-1))
+    else ((if depth > 0 then -1*(fst (deep_search board ocolor iinf (depth-1))) else eval_board board color), (-1,-1))
   else
-    let vals = List.map (update_board board color depth) ms in
-    get_list_max vals 0
+    let best = ref (-iinf, (-1,-1)) in 
+    (try
+      List.iter (update_board board color depth prebest best) ms;
+    with End_loop -> ());
+    !best
 
 let play board color = 
+  print_board board;
   let ms = valid_moves board color in 
     if ms = [] then 
       Pass 
     else 
-      if (empty_count board <= 10) then
-        let best = last_deep_search board color 15 in
+      if (empty_count board <= 14) then
+        let best = last_deep_search board color 30 in
         Mv ((fst (snd best)), (snd (snd best)))
       else 
-        let best = deep_search board color 3 in
-        let (i,j) = List.nth ms (snd best) in 
-        Mv (i,j)
+        let best = deep_search board color iinf 4 in
+        Mv ((fst (snd best)), (snd (snd best)))
 
 let report_result board = 
   let _ = print_endline "========== Final Result ==========" in 
