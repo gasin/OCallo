@@ -191,7 +191,11 @@ let play board color =
     if ms = [] then 
       Pass 
     else 
-      if (empty_count board <= 14) then
+      if (empty_count board >= 52) then
+        let k = Random.int (List.length ms) in 
+        let (i,j) = List.nth ms k in 
+        Mv (i,j)
+      else if (empty_count board <= 14) then
         let best = last_deep_search board color 30 in
         Mv ((fst (snd best)), (snd (snd best)))
       else 
