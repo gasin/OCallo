@@ -123,7 +123,6 @@ let last_eval_board board color : int =
 
 let rec update_board board color depth last (i,j) : int =
   let ocolor = opposite_color color in
-  if i = -1 then (if depth > 0 then -1*(fst (deep_search board ocolor (depth-1) last)) else eval_board board color) else
   let flip_cells = flippable_indices board color (i,j) in
   board.(i).(j) <- color;
   List.iter (fun (ii,jj) -> (board.(ii).(jj) <- color);) flip_cells; 
@@ -133,9 +132,13 @@ let rec update_board board color depth last (i,j) : int =
   board.(i).(j) <- none; ret
 
  and deep_search board color depth last : (int * int) =
+  let ocolor = opposite_color color in
   let ms = valid_moves board color in 
-  if List.length ms = 0 then
-    (update_board board color depth last (-1, -1), -1)
+  if empty_count board = 0 then
+    (last_eval_board board color, -1)
+  else if List.length ms = 0 then
+    if count board color = 0 then (-10000000, -1)
+    else ((if depth > 0 then -1*(fst (deep_search board ocolor (depth-1) last)) else if last = 0 then eval_board board color else last_eval_board board color), -1)
   else
     let vals = List.map (update_board board color depth last) ms in
     get_list_max vals 0
