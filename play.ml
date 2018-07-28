@@ -159,7 +159,7 @@ let rec last_update_board board color depth best (i,j) : unit =
   else if List.length ms = 0 then
     if count board color = 0 then (-inf, (-1, -1))
     else ((if depth > 0 then -1*(fst (last_deep_search board ocolor (depth-1))) else last_eval_board board color), (-1,-1))
-  else if emp > 6 then
+  else if emp > 4 then
     let fast_ms = List.map (fun x -> (snd x)) (List.sort (fun x y -> (fst x) - (fst y)) (sub_fast_search board color ms)) in
     let best = ref (-iinf, (-1,-1)) in
     (try
@@ -176,11 +176,12 @@ let rec last_update_board board color depth best (i,j) : unit =
 let eval_board board color : int =
   let value = ref 0 in
   let ocolor = opposite_color color in
+  let ms = valid_moves board ocolor in
   for i=1 to 8 do
     for j=1 to 8 do
       value := !value + (if board.(i).(j) = color then cell_value_list.(i-1).(j-1) else if board.(i).(j) = ocolor then -1*cell_value_list.(i-1).(j-1) else 0)
     done
-  done; !value
+  done; !value - (List.length ms) * 2
 
 let rec update_board board color depth prebest best (i,j) : unit =
   let ocolor = opposite_color color in
@@ -226,7 +227,7 @@ let play board color =
         let best = last_deep_search board color 30 in
         Mv ((fst (snd best)), (snd (snd best)))
       else
-        let best = deep_search board color (-1*iinf) 3 in
+        let best = deep_search board color (-1*iinf) 4 in
         Mv ((fst (snd best)), (snd (snd best)))
 
 let report_result board =
