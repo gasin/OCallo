@@ -178,10 +178,10 @@ let rec last_update_board myboard opboard best (i,j) : unit =
   if emp = 0 then
     (last_eval_board myboard opboard, (-1, -1))
   else if List.length ms = 0 then
-    if count myboard = 0 then (-inf, (-1, -1))
+    (if count myboard = 0 then (-inf, (-1, -1))
     else if again then (last_eval_board myboard opboard, (-1, -1))
-    else (-1*(fst (last_deep_search opboard myboard true)), (-1,-1))
-  else if emp > 4 then
+    else (-1*(fst (last_deep_search opboard myboard true)), (-1,-1)))
+  else if emp > 3 then
     let fast_ms = List.map (fun x -> (snd x)) (List.sort (fun x y -> (fst x) - (fst y)) (sub_fast_search myboard opboard ms)) in
     let best = ref (-iinf, (-1,-1)) in
     ((try
@@ -196,7 +196,8 @@ let rec last_update_board myboard opboard best (i,j) : unit =
     !best);;
 
 let eval_board myboard opboard : int =
-  let value = ref 0 in
+  let k = Random.int 3 in
+  let value = ref (k-1) in
   let ms = valid_moves opboard myboard in
   for i=0 to 63 do
     value := !value + (if (int64_get !myboard i) then cell_value_list.(i) else if (int64_get !opboard i) then -1*cell_value_list.(i) else 0)
@@ -224,10 +225,17 @@ let rec update_board myboard opboard depth prebest best (i,j) : unit =
   if List.length ms = 0 then
     if count myboard = 0 then (-inf, (-1,-1))
     else ((if depth > 0 then -1*(fst (deep_search opboard myboard iinf (depth-1))) else eval_board myboard opboard), (-1,-1))
+  else if depth > 2 then
+    let fast_ms = List.map (fun x -> (snd x)) (List.sort (fun x y -> (fst x) - (fst y)) (sub_fast_search myboard opboard ms)) in
+    let best = ref (-iinf, (-1,-1)) in
+    ((try
+      List.iter (update_board myboard opboard depth prebest best) fast_ms
+    with End_loop -> ());
+    !best)
   else
     (let best = ref (-iinf, (-1,-1)) in
     (try
-      List.iter (update_board myboard opboard depth prebest best) ms;
+      List.iter (update_board myboard opboard depth prebest best) ms
     with End_loop -> ());
     !best);;
 
@@ -241,11 +249,7 @@ let play board color =
     if ms = [] then
       Pass
     else
-      if (empty_count myboard opboard >= 52) then
-        let k = Random.int (List.length ms) in
-        let (i,j) = List.nth ms k in
-        Mv ((i+1),(j+1))
-      else if (empty_count myboard opboard <= 12) then
+      if (empty_count myboard opboard <= 12) then
         let best = last_deep_search myboard opboard false in
         Mv (((fst (snd best))+1), ((snd (snd best))+1))
       else
