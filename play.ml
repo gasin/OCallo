@@ -195,22 +195,15 @@ let sub_fast_search myboard opboard ms =
     (ret, (i,j))
   ) ms;;
 
-let rec last_update_board myboard opboard best (i,j) : unit =
-  let emp = empty_count myboard opboard in
+let rec last_update_board myboard opboard best ms : (int * (int * int)) =
+  if List.length ms = 0 then best else (let (i,j) = List.hd ms in
   let flip_cells = flippable_indices myboard opboard (i,j) in
   (*let flip_cells = bitboard_flip (i*8+j) !myboard opboard in*)
-  if emp = 1 then
-    let ret : int = (last_eval_board myboard opboard) + 1 + (int64_popcount flip_cells) * 2 in
-    (best := (ret, (i,j)); ())
-  else
-    (
     let new_myboard = logxor (int64_flip myboard (i*8+j)) flip_cells in
     let new_opboard = logxor opboard flip_cells in
     let ret : int = -1*(fst (last_deep_search new_opboard new_myboard false)) in
-    if (fst !best) < ret then
-      best := (ret, (i,j))
-    else ();
-    if ret > 0 then raise End_loop else ())
+    if ret > 0 then (ret, (i,j))
+    else last_update_board myboard opboard (if (fst best) < ret then (ret, (i,j)) else best) (List.tl ms))
 
  and last_deep_search myboard opboard again: (int * (int * int)) =
   let ms = valid_moves myboard opboard in
@@ -221,19 +214,18 @@ let rec last_update_board myboard opboard best (i,j) : unit =
     (if count myboard = 0 then (-inf, (-1, -1))
     else if again then (last_eval_board myboard opboard, (-1, -1))
     else (-1*(fst (last_deep_search opboard myboard true)), (-1,-1)))
+  else if emp = 1 then
+    let (i,j) = List.hd ms in
+    let flip_cells = flippable_indices myboard opboard (i,j) in
+    let ret : int = (last_eval_board myboard opboard) + 1 + (int64_popcount flip_cells) * 2 in
+    (ret, (i, j))
   else if emp > 3 then
     let fast_ms = List.map (fun x -> (snd x)) (List.sort (fun x y -> (fst x) - (fst y)) (sub_fast_search myboard opboard ms)) in
-    let best = ref (-iinf, (-1,-1)) in
-    ((try
-      List.iter (last_update_board myboard opboard best) fast_ms
-    with End_loop -> ());
-    !best)
+    let best = (-iinf, (-1,-1)) in
+    (last_update_board myboard opboard best fast_ms)
   else
-    let best = ref (-iinf, (-1,-1)) in
-    ((try
-      List.iter (last_update_board myboard opboard best) ms
-    with End_loop -> ());
-    !best);;
+    let best = (-iinf, (-1,-1)) in
+    (last_update_board myboard opboard best ms)
 
 let eval_board myboard opboard : int =
   let k = Random.int 3 in
@@ -284,20 +276,16 @@ let eval_board myboard opboard : int =
   else ());
   !value - (List.length ms) * 5);;
 
-let rec update_board myboard opboard depth prebest best (i,j) : unit =
+let rec update_board myboard opboard depth prebest best ms : (int * (int * int)) =
+  if List.length ms = 0 then best else (let (i,j) = List.hd ms in
   let flip_cells = flippable_indices myboard opboard (i,j) in
   (*let flip_cells = bitboard_flip (i*8+j) !myboard opboard in*)
   let new_myboard = logxor (int64_flip myboard (i*8+j)) flip_cells in
   let new_opboard = logxor opboard flip_cells in
-  let ret : int = if depth > 0 then -1*(fst (deep_search new_opboard new_myboard (fst !best) (depth-1)))
+  let ret : int = if depth > 0 then -1*(fst (deep_search new_opboard new_myboard (fst best) (depth-1)))
                   else eval_board new_myboard new_opboard in
-  if (fst !best) < ret then
-    best := (ret, (i,j))
-  else ();
-  if prebest >= -1*ret then
-    raise End_loop
-  else ();
-  ()
+  if prebest >= -1*ret then (ret, (i,j))
+  else update_board myboard opboard depth prebest (if fst best < ret then (ret, (i,j)) else best) (List.tl ms))
 
  and deep_search myboard opboard prebest depth : (int * (int * int)) =
   let ms = valid_moves myboard opboard in
@@ -306,20 +294,13 @@ let rec update_board myboard opboard depth prebest best (i,j) : unit =
     else ((if depth > 0 then -1*(fst (deep_search opboard myboard iinf (depth-1))) else eval_board myboard opboard), (-1,-1))
   else if depth > 2 then
     let fast_ms = List.map (fun x -> (snd x)) (List.sort (fun x y -> (fst x) - (fst y)) (sub_fast_search myboard opboard ms)) in
-    let best = ref (-iinf, (-1,-1)) in
-    ((try
-      List.iter (update_board myboard opboard depth prebest best) fast_ms
-    with End_loop -> ());
-    !best)
+    let best = (-iinf, (-1,-1)) in
+    (update_board myboard opboard depth prebest best fast_ms)
   else
-    (let best = ref (-iinf, (-1,-1)) in
-    (try
-      List.iter (update_board myboard opboard depth prebest best) ms
-    with End_loop -> ());
-    !best);;
+    let best = (-iinf, (-1,-1)) in
+    (update_board myboard opboard depth prebest best ms)
 
 let play board color =
-  print_board board;
   let ocolor  = opposite_color color in
   let myboard = convert_board board color in
   let opboard = convert_board board ocolor in
@@ -328,11 +309,11 @@ let play board color =
     if ms = [] then
       Pass
     else
-      if (empty_count myboard opboard <= 15) then
+      if (empty_count myboard opboard <= 16) then
         let best = last_deep_search myboard opboard false in
         Mv (((fst (snd best))+1), ((snd (snd best))+1))
       else
-        let best = deep_search myboard opboard (-1*iinf) 5 in
+        let best = deep_search myboard opboard (-1*iinf) 4 in
         Mv (((fst (snd best))+1), ((snd (snd best))+1));;
 
 let old_count board color : int =
