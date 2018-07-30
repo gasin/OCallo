@@ -76,16 +76,16 @@ let bitboard_put pos myboard opboard : bool =
   equal (bitboard_flip pos myboard opboard) 0x0L = false;;
 
 let count board : int =
-  int64_popcount !board;;
+  int64_popcount board;;
 
-let convert_board board color : int64 ref =
+let convert_board board color : int64 =
   let ret = ref 0x0L in
   for i=1 to 8 do
     for j=1 to 8 do
       if board.(i).(j) = color then ret := int64_flip !ret ((i-1)*8+(j-1))
     done
   done;
-  ret;;
+  !ret;;
 
 let print_board board =
   print_endline " |A B C D E F G H ";
@@ -136,29 +136,22 @@ let rec get_list_max l i : (int * int) =
   | s::ts -> let p = get_list_max ts (i+1) in if s > (fst p) then (s, i) else p;;
 
 let flippable_indices_line myboard opboard (di,dj) (i,j) : int64 =
-  let ret = ref 0x0L in
-  let rec f (di,dj) (i,j) =
+  if i > 7 || i < 0 || j > 7 || j < 0 || (int64_get opboard (i*8+j) = false) then
+    0x0L
+  else
+    let rec g (di,dj) (i,j) ret =
     if i > 7 || i < 0 || j > 7 || j < 0 then
       0x0L
-    else if (int64_get !opboard (i*8+j)) then
-      (ret := int64_flip !ret (i*8+j);
-      g (di,dj) (i+di,j+dj))
-    else
-      0x0L
-  and    g (di,dj) (i,j) =
-    if i > 7 || i < 0 || j > 7 || j < 0 then
-      0x0L
-    else if (int64_get !opboard (i*8+j)) then
-      (ret := int64_flip !ret (i*8+j);
-      g (di,dj) (i+di,j+dj))
-    else if (int64_get !myboard (i*8+j)) then
-      !ret
+    else if (int64_get opboard (i*8+j)) then
+      g (di,dj) (i+di,j+dj) (int64_flip ret (i*8+j))
+    else if (int64_get myboard (i*8+j)) then
+      ret
     else
       0x0L in
-    f (di,dj) (i,j);;
+      g (di,dj) (i+di,j+dj) (int64_flip 0x0L (i*8+j));;
 
 let flippable_indices myboard opboard (i,j) : int64 =
-  (*bitboard_flip (i*8+j) !myboard !opboard;;*)
+  (*bitboard_flip (i*8+j) !myboard opboard;;*)
   List.fold_left (fun x (di,dj) -> logor x (flippable_indices_line myboard opboard (di,dj) (i+di,j+dj))) 0x0L dirs;;
 
 let flip_count myboard opboard (i,j) : int =
@@ -166,14 +159,14 @@ let flip_count myboard opboard (i,j) : int =
 
 
 let is_valid_move myboard opboard (i,j) : bool =
-  (int64_get (logor !myboard !opboard) (i*8+j) = false) && (flip_count myboard opboard (i,j) > 0);;
-  (*(int64_get (logor !myboard !opboard) (i*8+j) = false) && (bitboard_put (i*8+j) !myboard !opboard);;*)
+  (int64_get (logor myboard opboard) (i*8+j) = false) && (flip_count myboard opboard (i,j) > 0);;
+  (*(int64_get (logor !myboard opboard) (i*8+j) = false) && (bitboard_put (i*8+j) !myboard opboard);;*)
 
 let empty_count myboard opboard : int =
-  64 - (int64_popcount (logor !myboard !opboard));;
+  64 - (int64_popcount (logor myboard opboard));;
 
 let mix xs ys =
-  List.concat (List.map (fun x -> List.map (fun y -> (x,y)) ys) xs);;
+  List.concat (List.rev_map (fun x -> List.rev_map (fun y -> (x,y)) ys) xs);;
 
 let valid_moves myboard opboard =
   let ls = [0;1;2;3;4;5;6;7] in
@@ -190,33 +183,30 @@ let cell_value_list = [|  60;-20;  0; -1; -1;  0;-20; 60;
                           60;-20;  0; -1; -1;  0;-20; 60 |];;
 
 let last_eval_board myboard opboard : int =
-  (int64_popcount !myboard) - (int64_popcount !opboard);;
+  (int64_popcount myboard) - (int64_popcount opboard);;
 
 let sub_fast_search myboard opboard ms =
   List.map (fun (i,j) ->
     let flip_cells = flippable_indices myboard opboard (i,j) in
-    (*let flip_cells = bitboard_flip (i*8+j) !myboard !opboard in*)
-    myboard := int64_flip !myboard (i*8+j);
-    myboard := logxor !myboard flip_cells; opboard := logxor !opboard flip_cells;
-    let ret = List.length (valid_moves opboard myboard) in
-    myboard := logxor !myboard flip_cells; opboard := logxor !opboard flip_cells;
-    myboard := int64_flip !myboard (i*8+j);
+    (*let flip_cells = bitboard_flip (i*8+j) !myboard opboard in*)
+    let new_myboard = logxor (int64_flip myboard (i*8+j)) flip_cells in
+    let new_opboard = logxor opboard flip_cells in
+    let ret = List.length (valid_moves new_opboard new_myboard) in
     (ret, (i,j))
   ) ms;;
 
 let rec last_update_board myboard opboard best (i,j) : unit =
   let emp = empty_count myboard opboard in
   let flip_cells = flippable_indices myboard opboard (i,j) in
-  (*let flip_cells = bitboard_flip (i*8+j) !myboard !opboard in*)
+  (*let flip_cells = bitboard_flip (i*8+j) !myboard opboard in*)
   if emp = 1 then
     let ret : int = (last_eval_board myboard opboard) + 1 + (int64_popcount flip_cells) * 2 in
     (best := (ret, (i,j)); ())
   else
-    (myboard := int64_flip !myboard (i*8+j);
-    myboard := logxor !myboard flip_cells; opboard := logxor !opboard flip_cells;
-    let ret : int = -1*(fst (last_deep_search opboard myboard false)) in
-    myboard := logxor !myboard flip_cells; opboard := logxor !opboard flip_cells;
-    myboard := int64_flip !myboard (i*8+j);
+    (
+    let new_myboard = logxor (int64_flip myboard (i*8+j)) flip_cells in
+    let new_opboard = logxor opboard flip_cells in
+    let ret : int = -1*(fst (last_deep_search new_opboard new_myboard false)) in
     if (fst !best) < ret then
       best := (ret, (i,j))
     else ();
@@ -249,45 +239,45 @@ let eval_board myboard opboard : int =
   let k = Random.int 3 in
   let value = ref (k-1) in
   let ms = valid_moves opboard myboard in
-  ((if (int64_get (logor !myboard !opboard) 0) then
+  ((if (int64_get (logor myboard opboard) 0) then
     (cell_value_list.(1) <- cell_value_list.(1) + 30;
     cell_value_list.(8) <- cell_value_list.(8) + 30;
     cell_value_list.(9) <- cell_value_list.(9) + 30)
   else ());
-  (if (int64_get (logor !myboard !opboard) 7) then
+  (if (int64_get (logor myboard opboard) 7) then
     (cell_value_list.(6) <- cell_value_list.(6) + 30;
     cell_value_list.(15) <- cell_value_list.(15) + 30;
     cell_value_list.(14) <- cell_value_list.(14) + 30)
   else ());
-  (if (int64_get (logor !myboard !opboard) 56) then
+  (if (int64_get (logor myboard opboard) 56) then
     (cell_value_list.(57) <- cell_value_list.(57) + 30;
     cell_value_list.(48) <- cell_value_list.(48) + 30;
     cell_value_list.(49) <- cell_value_list.(49) + 30)
   else ());
-  (if (int64_get (logor !myboard !opboard) 63) then
+  (if (int64_get (logor myboard opboard) 63) then
     (cell_value_list.(62) <- cell_value_list.(62) + 30;
     cell_value_list.(55) <- cell_value_list.(55) + 30;
     cell_value_list.(54) <- cell_value_list.(54) + 30)
   else ());
   for i=0 to 63 do
-    value := !value + (if (int64_get !myboard i) then cell_value_list.(i) else if (int64_get !opboard i) then -1*cell_value_list.(i) else 0)
+    value := !value + (if (int64_get myboard i) then cell_value_list.(i) else if (int64_get opboard i) then -1*cell_value_list.(i) else 0)
   done;
-  (if (int64_get (logor !myboard !opboard) 0) then
+  (if (int64_get (logor myboard opboard) 0) then
     (cell_value_list.(1) <- cell_value_list.(1) - 30;
     cell_value_list.(8) <- cell_value_list.(8) - 30;
     cell_value_list.(9) <- cell_value_list.(9) - 30)
   else ());
-  (if (int64_get (logor !myboard !opboard) 7) then
+  (if (int64_get (logor myboard opboard) 7) then
     (cell_value_list.(6) <- cell_value_list.(6) - 30;
     cell_value_list.(15) <- cell_value_list.(15) - 30;
     cell_value_list.(14) <- cell_value_list.(14) - 30)
   else ());
-  (if (int64_get (logor !myboard !opboard) 56) then
+  (if (int64_get (logor myboard opboard) 56) then
     (cell_value_list.(57) <- cell_value_list.(57) - 30;
     cell_value_list.(48) <- cell_value_list.(48) - 30;
     cell_value_list.(49) <- cell_value_list.(49) - 30)
   else ());
-  (if (int64_get (logor !myboard !opboard) 63) then
+  (if (int64_get (logor myboard opboard) 63) then
     (cell_value_list.(62) <- cell_value_list.(62) - 30;
     cell_value_list.(55) <- cell_value_list.(55) - 30;
     cell_value_list.(54) <- cell_value_list.(54) - 30)
@@ -296,13 +286,11 @@ let eval_board myboard opboard : int =
 
 let rec update_board myboard opboard depth prebest best (i,j) : unit =
   let flip_cells = flippable_indices myboard opboard (i,j) in
-  (*let flip_cells = bitboard_flip (i*8+j) !myboard !opboard in*)
-  myboard := int64_flip !myboard (i*8+j);
-  myboard := logxor !myboard flip_cells; opboard := logxor !opboard flip_cells;
-  let ret : int = if depth > 0 then -1*(fst (deep_search opboard myboard (fst !best) (depth-1)))
-                  else eval_board myboard opboard in
-  myboard := logxor !myboard flip_cells; opboard := logxor !opboard flip_cells;
-  myboard := int64_flip !myboard (i*8+j);
+  (*let flip_cells = bitboard_flip (i*8+j) !myboard opboard in*)
+  let new_myboard = logxor (int64_flip myboard (i*8+j)) flip_cells in
+  let new_opboard = logxor opboard flip_cells in
+  let ret : int = if depth > 0 then -1*(fst (deep_search new_opboard new_myboard (fst !best) (depth-1)))
+                  else eval_board new_myboard new_opboard in
   if (fst !best) < ret then
     best := (ret, (i,j))
   else ();
@@ -335,16 +323,16 @@ let play board color =
   let ocolor  = opposite_color color in
   let myboard = convert_board board color in
   let opboard = convert_board board ocolor in
-  print_bit_board !myboard !opboard;
+  print_bit_board myboard opboard;
   let ms = valid_moves myboard opboard in
     if ms = [] then
       Pass
     else
-      if (empty_count myboard opboard <= 16) then
+      if (empty_count myboard opboard <= 15) then
         let best = last_deep_search myboard opboard false in
         Mv (((fst (snd best))+1), ((snd (snd best))+1))
       else
-        let best = deep_search myboard opboard (-1*iinf) 3 in
+        let best = deep_search myboard opboard (-1*iinf) 5 in
         Mv (((fst (snd best))+1), ((snd (snd best))+1));;
 
 let old_count board color : int =
