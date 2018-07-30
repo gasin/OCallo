@@ -7,6 +7,9 @@ exception End_loop;;
 
 type board = color array array;;
 
+let search_depth = 4
+let last_search_depth = 18
+
 let iinf = 1000000000000000;;
 let inf  = 1000000000000;;
 
@@ -151,12 +154,26 @@ let flippable_indices_line myboard opboard (di,dj) (i,j) : int64 =
       g (di,dj) (i+di,j+dj) (int64_flip 0x0L (i*8+j));;
 
 let flippable_indices myboard opboard (i,j) : int64 =
-  (*bitboard_flip (i*8+j) !myboard opboard;;*)
+  (*bitboard_flip (i*8+j) myboard opboard;;*)
   List.fold_left (fun x (di,dj) -> logor x (flippable_indices_line myboard opboard (di,dj) (i+di,j+dj))) 0x0L dirs;;
 
-let flip_count myboard opboard (i,j) : int =
-  int64_popcount (flippable_indices myboard opboard (i,j));;
+let flippable_indices_count_line myboard opboard (di,dj) (i,j) : int =
+  if i > 7 || i < 0 || j > 7 || j < 0 || (int64_get opboard (i*8+j) = false) then
+    0
+  else
+    let rec g (di,dj) (i,j) ret =
+    if i > 7 || i < 0 || j > 7 || j < 0 then
+      0
+    else if (int64_get opboard (i*8+j)) then
+      g (di,dj) (i+di,j+dj) (ret+1)
+    else if (int64_get myboard (i*8+j)) then
+      ret
+    else
+      0 in
+      g (di,dj) (i+di,j+dj) 1;;
 
+let flip_count myboard opboard (i,j) : int =
+  List.fold_left (fun x (di,dj) -> x + (flippable_indices_count_line myboard opboard (di,dj) (i+di,j+dj))) 0 dirs;;
 
 let is_valid_move myboard opboard (i,j) : bool =
   (int64_get (logor myboard opboard) (i*8+j) = false) && (flip_count myboard opboard (i,j) > 0);;
@@ -211,13 +228,13 @@ let rec last_update_board myboard opboard best ms : (int * (int * int)) =
   if emp = 0 then
     (last_eval_board myboard opboard, (-1, -1))
   else if List.length ms = 0 then
-    (if count myboard = 0 then (-inf, (-1, -1))
+    (if int64_popcount myboard = 0 then (-inf, (-1, -1))
     else if again then (last_eval_board myboard opboard, (-1, -1))
     else (-1*(fst (last_deep_search opboard myboard true)), (-1,-1)))
   else if emp = 1 then
     let (i,j) = List.hd ms in
-    let flip_cells = flippable_indices myboard opboard (i,j) in
-    let ret : int = (last_eval_board myboard opboard) + 1 + (int64_popcount flip_cells) * 2 in
+    let flip_cells_count = flip_count myboard opboard (i,j) in
+    let ret : int = (last_eval_board myboard opboard) + 1 + flip_cells_count * 2 in
     (ret, (i, j))
   else if emp > 3 then
     let fast_ms = List.map (fun x -> (snd x)) (List.sort (fun x y -> (fst x) - (fst y)) (sub_fast_search myboard opboard ms)) in
@@ -228,8 +245,11 @@ let rec last_update_board myboard opboard best ms : (int * (int * int)) =
     (last_update_board myboard opboard best ms)
 
 let eval_board myboard opboard : int =
+(*
   let k = Random.int 3 in
   let value = ref (k-1) in
+*)
+  let value = ref 0 in
   let ms = valid_moves opboard myboard in
   ((if (int64_get (logor myboard opboard) 0) then
     (cell_value_list.(1) <- cell_value_list.(1) + 30;
@@ -290,7 +310,7 @@ let rec update_board myboard opboard depth prebest best ms : (int * (int * int))
  and deep_search myboard opboard prebest depth : (int * (int * int)) =
   let ms = valid_moves myboard opboard in
   if List.length ms = 0 then
-    if count myboard = 0 then (-inf, (-1,-1))
+    if int64_popcount myboard = 0 then (-inf, (-1,-1))
     else ((if depth > 0 then -1*(fst (deep_search opboard myboard iinf (depth-1))) else eval_board myboard opboard), (-1,-1))
   else if depth > 2 then
     let fast_ms = List.map (fun x -> (snd x)) (List.sort (fun x y -> (fst x) - (fst y)) (sub_fast_search myboard opboard ms)) in
@@ -304,16 +324,17 @@ let play board color =
   let ocolor  = opposite_color color in
   let myboard = convert_board board color in
   let opboard = convert_board board ocolor in
+  let emp = empty_count myboard opboard in
   print_bit_board myboard opboard;
   let ms = valid_moves myboard opboard in
     if ms = [] then
       Pass
     else
-      if (empty_count myboard opboard <= 16) then
+      if (emp <= last_search_depth) then
         let best = last_deep_search myboard opboard false in
         Mv (((fst (snd best))+1), ((snd (snd best))+1))
       else
-        let best = deep_search myboard opboard (-1*iinf) 4 in
+        let best = deep_search myboard opboard (-1*iinf) search_depth in
         Mv (((fst (snd best))+1), ((snd (snd best))+1));;
 
 let old_count board color : int =
