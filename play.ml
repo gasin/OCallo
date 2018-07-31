@@ -321,13 +321,14 @@ let play board color =
     if ms = [] then
       Pass
     else
+      (if emp >= 59 then Hashtbl.clear last_hash_table else ();
       if (emp <= last_search_depth) then
         (make_empty_cells myboard opboard;
         let best = last_deep_search myboard opboard false in
         Mv (((fst (snd best))+1), ((snd (snd best))+1)))
       else
         let best = deep_search myboard opboard (-1*iinf) search_depth in
-        Mv (((fst (snd best))+1), ((snd (snd best))+1)));;
+        Mv (((fst (snd best))+1), ((snd (snd best))+1))));;
 
 let old_count board color : int =
   let s = ref 0 in
