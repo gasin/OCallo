@@ -8,9 +8,13 @@ exception End_loop;;
 
 type board = color array array;;
 
-let hash_table = Hashtbl.create 100000;;
+let upbit = Array.init 64 (fun x -> (shift_left 0x1L x));;
 
-let search_depth = 5
+let hash_table = Hashtbl.create 100000;;
+let last_hash_table = Hashtbl.create 1000000;;
+let empty_cells = Hashtbl.create 30;;
+
+let search_depth = 6
 let last_search_depth = 20
 
 let iinf = 1000000000000000;;
@@ -82,6 +86,11 @@ let bitboard_flip pos myboard opboard : int64 =
 let bitboard_put pos myboard opboard : bool =
   equal (bitboard_flip pos myboard opboard) 0x0L = false;;
 *)
+
+let rec get_empty_area board i =
+  if i = 64 then []
+  else if int64_get board i = false then (((i lsr 3), (i land 7)) :: (get_empty_area board (i+1)))
+  else (get_empty_area board (i+1))
 
 let count board : int =
   int64_popcount board;;
@@ -195,14 +204,8 @@ let valid_moves myboard opboard =
   List.filter (is_valid_move myboard opboard)
     (mix ls ls);;
 
-let cell_value_list = [|  60;-20;  0; -1; -1;  0;-20; 60;
-                         -20;-30; -3; -3; -3; -3;-30;-20;
-                           0; -3;  0; -1; -1;  0; -3;  0;
-                          -1; -3; -1; -1; -1; -1; -3; -1;
-                          -1; -3; -1; -1; -1; -1; -3; -1;
-                           0; -3;  0; -1; -1;  0; -3;  0;
-                         -20;-30; -3; -3; -3; -3;-30;-20;
-                          60;-20;  0; -1; -1;  0;-20; 60 |];;
+let new_valid_moves myboard opboard =
+  Hashtbl.fold (fun x y z -> if is_valid_move myboard opboard x then x::z else z) empty_cells []
 
 let last_eval_board myboard opboard : int =
   (int64_popcount myboard) - (int64_popcount opboard);;
@@ -223,15 +226,17 @@ let rec last_update_board myboard opboard emp best ms : (int * (int * int)) =
   (*let flip_cells = bitboard_flip (i*8+j) !myboard opboard in*)
     let new_myboard = logxor (int64_flip myboard (i*8+j)) flip_cells in
     let new_opboard = logxor opboard flip_cells in
+    (Hashtbl.remove empty_cells (i,j);
     let ret : (int * (int * int)) = (last_deep_search new_opboard new_myboard false) in
+    (Hashtbl.add empty_cells (i,j) ();
     let ret2 = -1 * (fst ret) in
-    (if emp > 5 then Hashtbl.add hash_table (new_opboard, new_myboard) ret else ();
+    (if emp > 5 then Hashtbl.add last_hash_table (new_opboard, new_myboard) ret else ();
     if ret2 > 0 then (ret2, (i,j))
-    else last_update_board myboard opboard emp (if (fst best) < ret2 then (ret2, (i,j)) else best) (List.tl ms)))
+    else last_update_board myboard opboard emp (if (fst best) < ret2 then (ret2, (i,j)) else best) (List.tl ms)))))
 
  and last_deep_search myboard opboard again: (int * (int * int)) =
-  try (Hashtbl.find hash_table (myboard, opboard)) with Not_found ->
-  (let ms = valid_moves myboard opboard in
+  try (Hashtbl.find last_hash_table (myboard, opboard)) with Not_found ->
+  (let ms = new_valid_moves myboard opboard in
   let emp = empty_count myboard opboard in
   if emp = 0 then
     (last_eval_board myboard opboard, (-1, -1))
@@ -252,57 +257,26 @@ let rec last_update_board myboard opboard emp best ms : (int * (int * int)) =
     let best = (-iinf, (-1,-1)) in
     (last_update_board myboard opboard emp best ms))
 
+let cell_value_list = [|  60;-10;  0; -1; -1;  0;-10; 60;
+                         -10;-15; -3; -3; -3; -3;-15;-10;
+                           0; -3;  0; -1; -1;  0; -3;  0;
+                          -1; -3; -1; -1; -1; -1; -3; -1;
+                          -1; -3; -1; -1; -1; -1; -3; -1;
+                           0; -3;  0; -1; -1;  0; -3;  0;
+                         -10;-15; -3; -3; -3; -3;-15;-10;
+                          60;-10;  0; -1; -1;  0;-10; 60 |];;
+
 let eval_board myboard opboard : int =
 (*
   let k = Random.int 3 in
   let value = ref (k-1) in
 *)
   let value = ref 0 in
-  let ms = valid_moves opboard myboard in
-  ((if (int64_get (logor myboard opboard) 0) then
-    (cell_value_list.(1) <- cell_value_list.(1) + 30;
-    cell_value_list.(8) <- cell_value_list.(8) + 30;
-    cell_value_list.(9) <- cell_value_list.(9) + 30)
-  else ());
-  (if (int64_get (logor myboard opboard) 7) then
-    (cell_value_list.(6) <- cell_value_list.(6) + 30;
-    cell_value_list.(15) <- cell_value_list.(15) + 30;
-    cell_value_list.(14) <- cell_value_list.(14) + 30)
-  else ());
-  (if (int64_get (logor myboard opboard) 56) then
-    (cell_value_list.(57) <- cell_value_list.(57) + 30;
-    cell_value_list.(48) <- cell_value_list.(48) + 30;
-    cell_value_list.(49) <- cell_value_list.(49) + 30)
-  else ());
-  (if (int64_get (logor myboard opboard) 63) then
-    (cell_value_list.(62) <- cell_value_list.(62) + 30;
-    cell_value_list.(55) <- cell_value_list.(55) + 30;
-    cell_value_list.(54) <- cell_value_list.(54) + 30)
-  else ());
-  for i=0 to 63 do
+  let pos = (List.length (valid_moves myboard opboard)) - (List.length (valid_moves opboard myboard)) in
+  (for i=0 to 63 do
     value := !value + (if (int64_get myboard i) then cell_value_list.(i) else if (int64_get opboard i) then -1*cell_value_list.(i) else 0)
   done;
-  (if (int64_get (logor myboard opboard) 0) then
-    (cell_value_list.(1) <- cell_value_list.(1) - 30;
-    cell_value_list.(8) <- cell_value_list.(8) - 30;
-    cell_value_list.(9) <- cell_value_list.(9) - 30)
-  else ());
-  (if (int64_get (logor myboard opboard) 7) then
-    (cell_value_list.(6) <- cell_value_list.(6) - 30;
-    cell_value_list.(15) <- cell_value_list.(15) - 30;
-    cell_value_list.(14) <- cell_value_list.(14) - 30)
-  else ());
-  (if (int64_get (logor myboard opboard) 56) then
-    (cell_value_list.(57) <- cell_value_list.(57) - 30;
-    cell_value_list.(48) <- cell_value_list.(48) - 30;
-    cell_value_list.(49) <- cell_value_list.(49) - 30)
-  else ());
-  (if (int64_get (logor myboard opboard) 63) then
-    (cell_value_list.(62) <- cell_value_list.(62) - 30;
-    cell_value_list.(55) <- cell_value_list.(55) - 30;
-    cell_value_list.(54) <- cell_value_list.(54) - 30)
-  else ());
-  !value - (List.length ms) * 5);;
+  !value + pos * 5);;
 
 let rec update_board myboard opboard depth prebest best ms : (int * (int * int)) =
   if List.length ms = 0 then best else (let (i,j) = List.hd ms in
@@ -330,8 +304,14 @@ let rec update_board myboard opboard depth prebest best ms : (int * (int * int))
     let best = (-iinf, (-1,-1)) in
     (update_board myboard opboard depth prebest best ms))
 
+let make_empty_cells myboard opboard =
+  let board = lognot (logor myboard opboard) in
+  for i=0 to 63 do
+    if int64_get board i then Hashtbl.add empty_cells (i lsr 3, i land 7) () else ();
+  done
+
 let play board color =
-  (Hashtbl.clear hash_table;
+  (Hashtbl.clear hash_table; Hashtbl.clear empty_cells;
   let ocolor  = opposite_color color in
   let myboard = convert_board board color in
   let opboard = convert_board board ocolor in
@@ -342,8 +322,9 @@ let play board color =
       Pass
     else
       if (emp <= last_search_depth) then
+        (make_empty_cells myboard opboard;
         let best = last_deep_search myboard opboard false in
-        Mv (((fst (snd best))+1), ((snd (snd best))+1))
+        Mv (((fst (snd best))+1), ((snd (snd best))+1)))
       else
         let best = deep_search myboard opboard (-1*iinf) search_depth in
         Mv (((fst (snd best))+1), ((snd (snd best))+1)));;
