@@ -15,18 +15,18 @@ let last_hash_table = Hashtbl.create 1000000;;
 let empty_cells = Hashtbl.create 30;;
 
 let search_depth = 6
-let last_search_depth = 20
+let last_search_depth = 19
 
 let iinf = 1000000000000000;;
 let inf  = 1000000000000;;
 
-let int64_get board i : bool =
+let int64_get (board : int64) (i : int) : bool =
   equal (logand (shift_right_logical board i) 0x1L) 0x1L;;
 
-let int64_flip board i : int64 =
+let int64_flip (board : int64) (i : int) : int64 =
   logxor board (shift_left 0x1L i);;
 
-let int64_popcount x : int =
+let int64_popcount (x : int64) : int =
   let m1  = 0x5555555555555555L in
   let m2  = 0x3333333333333333L in
   let m4  = 0x0f0f0f0f0f0f0f0fL in
@@ -36,6 +36,7 @@ let int64_popcount x : int =
   let x = logand (Int64.add x (shift_right_logical x 4)) m4 in
   to_int (shift_right_logical (Int64.mul x h01) 56);;
 
+(*
 let int64_nlz x : int =
   let x = logor x (shift_right_logical x 1) in
   let x = logor x (shift_right_logical x 2) in
@@ -45,7 +46,6 @@ let int64_nlz x : int =
   let x = logor x (shift_right_logical x 32) in
   int64_popcount (lognot x);;
 
-(*
 let bitboard_flip pos myboard opboard : int64 =
   let mask = shift_right_logical 0x0080808080808080L (63 - pos) in
   (*let outflank = logand (shift_right_logical 0x8000000000000000L (int64_nlz (logand (lognot opboard) mask))) myboard in*)
@@ -87,12 +87,12 @@ let bitboard_put pos myboard opboard : bool =
   equal (bitboard_flip pos myboard opboard) 0x0L = false;;
 *)
 
-let rec get_empty_area board i =
+let rec get_empty_area (board : int64) (i : int) : (int * int) list =
   if i = 64 then []
   else if int64_get board i = false then (((i lsr 3), (i land 7)) :: (get_empty_area board (i+1)))
   else (get_empty_area board (i+1))
 
-let count board : int =
+let count (board : int64) : int =
   int64_popcount board;;
 
 let convert_board board color : int64 =
@@ -147,16 +147,11 @@ let init_board () =
 
 let dirs = [ (-1,-1); (0,-1); (1,-1); (-1,0); (1,0); (-1,1); (0,1); (1,1) ];;
 
-let rec get_list_max l i : (int * int) =
-  match l with
-  | []    -> (-100000000,-1)
-  | s::ts -> let p = get_list_max ts (i+1) in if s > (fst p) then (s, i) else p;;
-
-let flippable_indices_line myboard opboard (di,dj) (i,j) : int64 =
+let flippable_indices_line (myboard : int64) (opboard : int64) ((di,dj) : (int * int)) ((i,j) : (int * int)) : int64 =
   if i > 7 || i < 0 || j > 7 || j < 0 || (int64_get opboard (i*8+j) = false) then
     0x0L
   else
-    let rec g (di,dj) (i,j) ret =
+    let rec g ((di,dj) : (int * int)) ((i,j) : (int * int)) (ret : int64) : int64 =
     if i > 7 || i < 0 || j > 7 || j < 0 then
       0x0L
     else if (int64_get opboard (i*8+j)) then
@@ -167,15 +162,15 @@ let flippable_indices_line myboard opboard (di,dj) (i,j) : int64 =
       0x0L in
       g (di,dj) (i+di,j+dj) (int64_flip 0x0L (i*8+j));;
 
-let flippable_indices myboard opboard (i,j) : int64 =
+let flippable_indices (myboard : int64) (opboard : int64) ((i,j) : (int * int)) : int64 =
   (*bitboard_flip (i*8+j) myboard opboard;;*)
   List.fold_left (fun x (di,dj) -> logor x (flippable_indices_line myboard opboard (di,dj) (i+di,j+dj))) 0x0L dirs;;
 
-let flippable_indices_count_line myboard opboard (di,dj) (i,j) : int =
+let flippable_indices_count_line (myboard : int64) (opboard : int64) ((di,dj) : (int * int)) ((i,j) : (int * int)) : int =
   if i > 7 || i < 0 || j > 7 || j < 0 || (int64_get opboard (i*8+j) = false) then
     0
   else
-    let rec g (di,dj) (i,j) ret =
+    let rec g ((di,dj) : (int * int)) ((i,j) : (int * int)) (ret : int) : int =
     if i > 7 || i < 0 || j > 7 || j < 0 then
       0
     else if (int64_get opboard (i*8+j)) then
@@ -193,24 +188,24 @@ let is_valid_move myboard opboard (i,j) : bool =
   (int64_get (logor myboard opboard) (i*8+j) = false) && (flip_count myboard opboard (i,j) > 0);;
   (*(int64_get (logor !myboard opboard) (i*8+j) = false) && (bitboard_put (i*8+j) !myboard opboard);;*)
 
-let empty_count myboard opboard : int =
+let empty_count (myboard : int64) (opboard : int64) : int =
   64 - (int64_popcount (logor myboard opboard));;
 
 let mix xs ys =
   List.concat (List.rev_map (fun x -> List.rev_map (fun y -> (x,y)) ys) xs);;
 
-let valid_moves myboard opboard =
+let valid_moves (myboard : int64) (opboard : int64) : (int * int) list =
   let ls = [0;1;2;3;4;5;6;7] in
   List.filter (is_valid_move myboard opboard)
     (mix ls ls);;
 
-let new_valid_moves myboard opboard =
+let new_valid_moves (myboard : int64) (opboard : int64) : (int * int) list =
   Hashtbl.fold (fun x y z -> if is_valid_move myboard opboard x then x::z else z) empty_cells []
 
-let last_eval_board myboard opboard : int =
+let last_eval_board (myboard : int64) (opboard : int64) : int =
   (int64_popcount myboard) - (int64_popcount opboard);;
 
-let sub_fast_search myboard opboard ms =
+let sub_fast_search (myboard : int64) (opboard : int64) (ms : (int * int) list) : (int * (int * int)) list =
   List.map (fun (i,j) ->
     let flip_cells = flippable_indices myboard opboard (i,j) in
     (*let flip_cells = bitboard_flip (i*8+j) !myboard opboard in*)
@@ -220,7 +215,7 @@ let sub_fast_search myboard opboard ms =
     (ret, (i,j))
   ) ms;;
 
-let rec last_update_board myboard opboard emp best ms : (int * (int * int)) =
+let rec last_update_board (myboard : int64) (opboard : int64) (emp : int) (best : (int * (int * int))) (ms : (int * int) list) : (int * (int * int)) =
   if List.length ms = 0 then best else (let (i,j) = List.hd ms in
   let flip_cells = flippable_indices myboard opboard (i,j) in
   (*let flip_cells = bitboard_flip (i*8+j) !myboard opboard in*)
@@ -230,11 +225,11 @@ let rec last_update_board myboard opboard emp best ms : (int * (int * int)) =
     let ret : (int * (int * int)) = (last_deep_search new_opboard new_myboard false) in
     (Hashtbl.add empty_cells (i,j) ();
     let ret2 = -1 * (fst ret) in
-    (if emp > 5 then Hashtbl.add last_hash_table (new_opboard, new_myboard) ret else ();
+    (if emp > 6 then Hashtbl.add last_hash_table (new_opboard, new_myboard) ret else ();
     if ret2 > 0 then (ret2, (i,j))
     else last_update_board myboard opboard emp (if (fst best) < ret2 then (ret2, (i,j)) else best) (List.tl ms)))))
 
- and last_deep_search myboard opboard again: (int * (int * int)) =
+ and last_deep_search (myboard : int64) (opboard : int64) (again : bool) : (int * (int * int)) =
   try (Hashtbl.find last_hash_table (myboard, opboard)) with Not_found ->
   (let ms = new_valid_moves myboard opboard in
   let emp = empty_count myboard opboard in
@@ -257,40 +252,55 @@ let rec last_update_board myboard opboard emp best ms : (int * (int * int)) =
     let best = (-iinf, (-1,-1)) in
     (last_update_board myboard opboard emp best ms))
 
-let cell_value_list = [|  60;-10;  0; -1; -1;  0;-10; 60;
+let cell_value_list = [| 100;-10;  0; -1; -1;  0;-10;100;
                          -10;-15; -3; -3; -3; -3;-15;-10;
                            0; -3;  0; -1; -1;  0; -3;  0;
                           -1; -3; -1; -1; -1; -1; -3; -1;
                           -1; -3; -1; -1; -1; -1; -3; -1;
                            0; -3;  0; -1; -1;  0; -3;  0;
                          -10;-15; -3; -3; -3; -3;-15;-10;
-                          60;-10;  0; -1; -1;  0;-10; 60 |];;
+                         100;-10;  0; -1; -1;  0;-10;100 |];;
 
-let eval_board myboard opboard : int =
-(*
-  let k = Random.int 3 in
-  let value = ref (k-1) in
-*)
-  let value = ref 0 in
-  let pos = (List.length (valid_moves myboard opboard)) - (List.length (valid_moves opboard myboard)) in
-  (for i=0 to 63 do
-    value := !value + (if (int64_get myboard i) then cell_value_list.(i) else if (int64_get opboard i) then -1*cell_value_list.(i) else 0)
+let eval_board (myboard : int64) (opboard : int64) : int =
+  let k = Random.int 5 in
+  let value = ref (k-2) in
+  (for i=0 to 7 do
+    for j=0 to 7 do
+      if int64_get myboard (i*8+j) then
+        value := !value + cell_value_list.(i*8+j)
+      else if int64_get opboard (i*8+j) then
+        value := !value - cell_value_list.(i*8+j)
+      else
+        (if (flip_count myboard opboard (i,j) > 0) then
+          if (i,j) = (0,0) || (i,j) = (0,7) || (i,j) = (7,0) || (i,j) = (7,7) then
+            value := !value + 25
+          else
+            value := !value + 5
+         else ();
+         if (flip_count opboard myboard (i,j) > 0) then
+          if (i,j) = (0,0) || (i,j) = (0,7) || (i,j) = (7,0) || (i,j) = (7,7) then
+            value := !value - 25
+          else
+            value := !value - 5
+         else ())
+    done
   done;
-  !value + pos * 5);;
+  !value);;
 
-let rec update_board myboard opboard depth prebest best ms : (int * (int * int)) =
+let rec update_board (myboard : int64) (opboard : int64) (depth : int) (prebest : int) (best : (int * (int * int))) (ms : (int * int) list) : (int * (int * int)) =
   if List.length ms = 0 then best else (let (i,j) = List.hd ms in
   let flip_cells = flippable_indices myboard opboard (i,j) in
   (*let flip_cells = bitboard_flip (i*8+j) !myboard opboard in*)
   let new_myboard = logxor (int64_flip myboard (i*8+j)) flip_cells in
   let new_opboard = logxor opboard flip_cells in
-  let ret : int = if depth > 0 then let ret2 = (deep_search new_opboard new_myboard (fst best) (depth-1)) in
+  let ret : int = if depth > 0 then 
+                    let ret2 = (deep_search new_opboard new_myboard (fst best) (depth-1)) in
                                      (Hashtbl.add hash_table (new_opboard, new_myboard) ret2; -1 * (fst ret2))
                   else eval_board new_myboard new_opboard in
   if prebest >= -1*ret then (ret, (i,j))
   else update_board myboard opboard depth prebest (if fst best < ret then (ret, (i,j)) else best) (List.tl ms))
 
- and deep_search myboard opboard prebest depth : (int * (int * int)) =
+ and deep_search (myboard : int64) (opboard : int64) (prebest : int) (depth : int) : (int * (int * int)) =
   try (Hashtbl.find hash_table (myboard, opboard)) with Not_found ->
   (let ms = valid_moves myboard opboard in
   if List.length ms = 0 then
@@ -304,7 +314,7 @@ let rec update_board myboard opboard depth prebest best ms : (int * (int * int))
     let best = (-iinf, (-1,-1)) in
     (update_board myboard opboard depth prebest best ms))
 
-let make_empty_cells myboard opboard =
+let make_empty_cells (myboard : int64) (opboard : int64) : unit =
   let board = lognot (logor myboard opboard) in
   for i=0 to 63 do
     if int64_get board i then Hashtbl.add empty_cells (i lsr 3, i land 7) () else ();
@@ -325,10 +335,18 @@ let play board color =
       if (emp <= last_search_depth) then
         (make_empty_cells myboard opboard;
         let best = last_deep_search myboard opboard false in
-        Mv (((fst (snd best))+1), ((snd (snd best))+1)))
+        (print_string "decided "; print_int (fst best); print_string "\n";
+         print_string "hash_table "; print_int (Hashtbl.length last_hash_table); print_string "\n";
+        if fst best >= 0 then
+          Mv (((fst (snd best))+1), ((snd (snd best))+1))
+        else
+          let best = deep_search myboard opboard (-1*iinf) (search_depth-1) in
+          Mv (((fst (snd best))+1), ((snd (snd best))+1))))
       else
         let best = deep_search myboard opboard (-1*iinf) search_depth in
-        Mv (((fst (snd best))+1), ((snd (snd best))+1))));;
+        (print_string "predict "; print_int (fst best); print_string "\n";
+         print_string "hash_table "; print_int (Hashtbl.length hash_table); print_string "\n";
+        Mv (((fst (snd best))+1), ((snd (snd best))+1)))));;
 
 let old_count board color : int =
   let s = ref 0 in
