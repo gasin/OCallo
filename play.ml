@@ -261,7 +261,6 @@ let cell_value_list = [| 100;-10;  0; -1; -1;  0;-10;100;
                          -10;-15; -3; -3; -3; -3;-15;-10;
                          100;-10;  0; -1; -1;  0;-10;100 |];;
 
-<<<<<<< HEAD
 let eval_board (myboard : int64) (opboard : int64) : int =
   let k = Random.int 5 in
   let value = ref (k-2) in
@@ -285,60 +284,35 @@ let eval_board (myboard : int64) (opboard : int64) : int =
             value := !value - 5
          else ())
     done
-=======
-let eval_valid_moves myboard opboard : int =
-  let ret = ref 0 in
-  for i=0 to 7 do
-    for j=0 to 7 do
-      if (int64_get (logor myboard opboard) (i*8+j) = false) && (flip_count myboard opboard (i,j) > 0) then
-          if (i,j) = (0,0) || (i,j) = (0,7) || (i,j) = (7,0) || (i,j) = (7,7) then
-            ret := !ret + 5
-          else
-            ret := !ret + 1
-      else ()
-    done
-  done;
-  !ret
-
-let eval_board myboard opboard : int =
-(*
-  let k = Random.int 5 in
-  let value = ref (k-2) in
-*)
-  let value = ref 0 in
-  let pos = (eval_valid_moves myboard opboard) - (eval_valid_moves opboard myboard) in
-  (for i=0 to 63 do
-    value := !value + (if (int64_get myboard i) then cell_value_list.(i) else if (int64_get opboard i) then -1*cell_value_list.(i) else 0)
->>>>>>> e7c3517e66d6022b1c1a56772ea2929b5d2746a1
   done;
   !value);;
 
-let rec update_board (myboard : int64) (opboard : int64) (depth : int) (prebest : int) (best : (int * (int * int))) (ms : (int * int) list) : (int * (int * int)) =
+let rec update_board (myboard : int64) (opboard : int64) (depth : int) (alpha : int) (beta : int) (best : (int * (int * int))) (ms : (int * int) list) : (int * (int * int)) =
   if List.length ms = 0 then best else (let (i,j) = List.hd ms in
   let flip_cells = flippable_indices myboard opboard (i,j) in
   (*let flip_cells = bitboard_flip (i*8+j) !myboard opboard in*)
   let new_myboard = logxor (int64_flip myboard (i*8+j)) flip_cells in
   let new_opboard = logxor opboard flip_cells in
   let ret : int = if depth > 0 then 
-                    let ret2 = (deep_search new_opboard new_myboard (fst best) (depth-1)) in
+                    let ret2 = (deep_search new_opboard new_myboard (-1 * (fst best)) (-1*alpha) (depth-1)) in
                                      (Hashtbl.add hash_table (new_opboard, new_myboard) ret2; -1 * (fst ret2))
                   else eval_board new_myboard new_opboard in
-  if prebest >= -1*ret then (ret, (i,j))
-  else update_board myboard opboard depth prebest (if fst best < ret then (ret, (i,j)) else best) (List.tl ms))
+  if alpha <= ret then (ret, (i,j))
+  else update_board myboard opboard depth alpha beta (if fst best < ret then (ret, (i,j)) else best) (List.tl ms))
 
- and deep_search (myboard : int64) (opboard : int64) (prebest : int) (depth : int) : (int * (int * int)) =
+ and deep_search (myboard : int64) (opboard : int64) (alpha : int) (beta : int) (depth : int) : (int * (int * int)) =
   try (Hashtbl.find hash_table (myboard, opboard)) with Not_found ->
   (let ms = valid_moves myboard opboard in
   if List.length ms = 0 then
     if int64_popcount myboard = 0 then (-inf, (-1,-1))
-    else ((if depth > 0 then -1*(fst (deep_search opboard myboard iinf (depth-1))) else eval_board myboard opboard), (-1,-1))
+    else ((if depth > 0 then -1*(fst (deep_search opboard myboard (-1*beta) (-1*alpha) (depth-1))) else eval_board myboard opboard), (-1,-1))
   else if depth > 2 then
     let fast_ms = List.map (fun x -> (snd x)) (List.sort (fun x y -> (fst x) - (fst y)) (sub_fast_search myboard opboard ms)) in
-    let best = (-iinf, (-1,-1)) in
-    (update_board myboard opboard depth prebest best fast_ms)
+    let best = (beta, (-1,-1)) in
+    (update_board myboard opboard depth alpha beta best fast_ms)
   else
-    let best = (-iinf, (-1,-1)) in
-    (update_board myboard opboard depth prebest best ms))
+    let best = (beta, (-1,-1)) in
+    (update_board myboard opboard depth alpha beta best ms))
 
 let make_empty_cells (myboard : int64) (opboard : int64) : unit =
   let board = lognot (logor myboard opboard) in
@@ -361,22 +335,15 @@ let play board color =
       if (emp <= last_search_depth) then
         (make_empty_cells myboard opboard;
         let best = last_deep_search myboard opboard false in
-<<<<<<< HEAD
         (print_string "decided "; print_int (fst best); print_string "\n";
          print_string "hash_table "; print_int (Hashtbl.length last_hash_table); print_string "\n";
-=======
->>>>>>> e7c3517e66d6022b1c1a56772ea2929b5d2746a1
         if fst best >= 0 then
           Mv (((fst (snd best))+1), ((snd (snd best))+1))
         else
-          let best = deep_search myboard opboard (-1*iinf) (search_depth-1) in
-<<<<<<< HEAD
+          let best = deep_search myboard opboard iinf (-1*iinf) (search_depth-1) in
           Mv (((fst (snd best))+1), ((snd (snd best))+1))))
-=======
-          Mv (((fst (snd best))+1), ((snd (snd best))+1)))
->>>>>>> e7c3517e66d6022b1c1a56772ea2929b5d2746a1
       else
-        let best = deep_search myboard opboard (-1*iinf) search_depth in
+        let best = deep_search myboard opboard iinf (-1*iinf) search_depth in
         (print_string "predict "; print_int (fst best); print_string "\n";
          print_string "hash_table "; print_int (Hashtbl.length hash_table); print_string "\n";
         Mv (((fst (snd best))+1), ((snd (snd best))+1)))));;
