@@ -14,7 +14,7 @@ let hash_table = Hashtbl.create 100000;;
 let last_hash_table = Hashtbl.create 1000000;;
 let empty_cells = Hashtbl.create 30;;
 
-let search_depth = 6
+let search_depth = 7
 let last_search_depth = 19
 
 let iinf = 1000000000000000;;
@@ -205,13 +205,81 @@ let new_valid_moves (myboard : int64) (opboard : int64) : (int * int) list =
 let last_eval_board (myboard : int64) (opboard : int64) : int =
   (int64_popcount myboard) - (int64_popcount opboard);;
 
+let corners = [(0,0); (0,7); (7,0); (7,7)];;
+let corners_dir = [[(1,0); (0,1)]; [(1,0);(0,-1)]; [(-1,0);(0,1)]; [(-1,0);(0,-1)]];;
+
+let edge_mountain = [| 0x7e00000000000000L;   0x80808080808000L;   0x1010101010100L; 0x7eL |];;
+let edge_mountain_sub = [| 0x8100000000000000L; 0x8000000000000080L; 0x100000000000001L; 0x81L |];;
+
+let cell_value_list = [| 100;-10;  0; -1; -1;  0;-10;100;
+                         -10;-15; -3; -3; -3; -3;-15;-10;
+                           0; -3;  0; -1; -1;  0; -3;  0;
+                          -1; -3; -1; -1; -1; -1; -3; -1;
+                          -1; -3; -1; -1; -1; -1; -3; -1;
+                           0; -3;  0; -1; -1;  0; -3;  0;
+                         -10;-15; -3; -3; -3; -3;-15;-10;
+                         100;-10;  0; -1; -1;  0;-10;100 |];;
+
+let rec solid_stone_line_sub board dep (i,j) (di,dj) x : int =
+  if dep = 0 then x
+  else if int64_get board ((i+di)*8+j+dj) then solid_stone_line_sub board (dep-1) (i+di,j+dj) (di,dj) (x+1)
+  else x
+
+let solid_stone_line board (i,j) dirs : int =
+  List.fold_left (fun x (di,dj) -> (solid_stone_line_sub board 6 (i,j) (di,dj) x)) 0 dirs
+
+let rec solid_stone myboard opboard (corners : (int * int) list) (corners_dir : (int * int) list list) (ret : int) : int =
+  if corners = [] then ret else
+  let (i,j) = List.hd corners in
+    if int64_get myboard (i*8+j) then
+      let tmp = (solid_stone_line myboard (i,j) (List.hd corners_dir)) in
+      solid_stone myboard opboard (List.tl corners) (List.tl corners_dir) (ret+tmp)
+    else if int64_get opboard (i*8+j) then
+      let tmp = (solid_stone_line opboard (i,j) (List.hd corners_dir)) in
+      solid_stone myboard opboard (List.tl corners) (List.tl corners_dir) (ret-tmp)
+    else (solid_stone myboard opboard (List.tl corners) (List.tl corners_dir) ret)
+
+let eval_board (myboard : int64) (opboard : int64) : int =
+  let k = Random.int 5 in
+  let value = ref (k-2) in
+  (for i=0 to 7 do
+    for j=0 to 7 do
+      if int64_get myboard (i*8+j) then
+        value := !value + cell_value_list.(i*8+j)
+      else if int64_get opboard (i*8+j) then
+        value := !value - cell_value_list.(i*8+j)
+      else
+        (if (flip_count myboard opboard (i,j) > 0) then
+          if (i,j) = (0,0) || (i,j) = (0,7) || (i,j) = (7,0) || (i,j) = (7,7) then
+            value := !value + 25
+          else
+            value := !value + 5
+         else ();
+         if (flip_count opboard myboard (i,j) > 0) then
+          if (i,j) = (0,0) || (i,j) = (0,7) || (i,j) = (7,0) || (i,j) = (7,7) then
+            value := !value - 25
+          else
+            value := !value - 5
+         else ())
+    done
+  done;
+  for i=0 to 3 do
+    value := !value + if (equal (logand myboard edge_mountain_sub.(i)) 0x0L && equal (logand opboard edge_mountain_sub.(i)) 0x0L) then
+                        if equal (logand myboard edge_mountain.(i)) edge_mountain.(i) then 10
+                        else if equal (logand opboard edge_mountain.(i)) edge_mountain.(i) then -10
+                        else 0
+                      else 0;
+  done;
+  value := !value + ((solid_stone myboard opboard corners corners_dir 0) * 10);
+  !value);;
+
 let sub_fast_search (myboard : int64) (opboard : int64) (ms : (int * int) list) : (int * (int * int)) list =
   List.map (fun (i,j) ->
     let flip_cells = flippable_indices myboard opboard (i,j) in
     (*let flip_cells = bitboard_flip (i*8+j) !myboard opboard in*)
     let new_myboard = logxor (int64_flip myboard (i*8+j)) flip_cells in
     let new_opboard = logxor opboard flip_cells in
-    let ret = List.length (valid_moves new_opboard new_myboard) in
+    let ret = (eval_board new_opboard new_myboard) in
     (ret, (i,j))
   ) ms;;
 
@@ -252,57 +320,23 @@ let rec last_update_board (myboard : int64) (opboard : int64) (emp : int) (best 
     let best = (-iinf, (-1,-1)) in
     (last_update_board myboard opboard emp best ms))
 
-let cell_value_list = [| 100;-10;  0; -1; -1;  0;-10;100;
-                         -10;-15; -3; -3; -3; -3;-15;-10;
-                           0; -3;  0; -1; -1;  0; -3;  0;
-                          -1; -3; -1; -1; -1; -1; -3; -1;
-                          -1; -3; -1; -1; -1; -1; -3; -1;
-                           0; -3;  0; -1; -1;  0; -3;  0;
-                         -10;-15; -3; -3; -3; -3;-15;-10;
-                         100;-10;  0; -1; -1;  0;-10;100 |];;
-
-let eval_board (myboard : int64) (opboard : int64) : int =
-  let k = Random.int 5 in
-  let value = ref (k-2) in
-  (for i=0 to 7 do
-    for j=0 to 7 do
-      if int64_get myboard (i*8+j) then
-        value := !value + cell_value_list.(i*8+j)
-      else if int64_get opboard (i*8+j) then
-        value := !value - cell_value_list.(i*8+j)
-      else
-        (if (flip_count myboard opboard (i,j) > 0) then
-          if (i,j) = (0,0) || (i,j) = (0,7) || (i,j) = (7,0) || (i,j) = (7,7) then
-            value := !value + 25
-          else
-            value := !value + 5
-         else ();
-         if (flip_count opboard myboard (i,j) > 0) then
-          if (i,j) = (0,0) || (i,j) = (0,7) || (i,j) = (7,0) || (i,j) = (7,7) then
-            value := !value - 25
-          else
-            value := !value - 5
-         else ())
-    done
-  done;
-  !value);;
-
 let rec update_board (myboard : int64) (opboard : int64) (depth : int) (alpha : int) (beta : int) (best : (int * (int * int))) (ms : (int * int) list) : (int * (int * int)) =
   if List.length ms = 0 then best else (let (i,j) = List.hd ms in
   let flip_cells = flippable_indices myboard opboard (i,j) in
   (*let flip_cells = bitboard_flip (i*8+j) !myboard opboard in*)
   let new_myboard = logxor (int64_flip myboard (i*8+j)) flip_cells in
   let new_opboard = logxor opboard flip_cells in
-  let ret : int = if depth > 0 then 
+  let ret : int = if depth > 0 then
                     let ret2 = (deep_search new_opboard new_myboard (-1 * (fst best)) (-1*alpha) (depth-1)) in
                                      (Hashtbl.add hash_table (new_opboard, new_myboard) ret2; -1 * (fst ret2))
                   else eval_board new_myboard new_opboard in
   if alpha <= ret then (ret, (i,j))
+  else if beta > ret then update_board myboard opboard depth alpha ret (if fst best < ret then (ret, (i,j)) else best) (List.tl ms)
   else update_board myboard opboard depth alpha beta (if fst best < ret then (ret, (i,j)) else best) (List.tl ms))
 
  and deep_search (myboard : int64) (opboard : int64) (alpha : int) (beta : int) (depth : int) : (int * (int * int)) =
-  try (Hashtbl.find hash_table (myboard, opboard)) with Not_found ->
-  (let ms = valid_moves myboard opboard in
+  (*try (Hashtbl.find hash_table (myboard, opboard)) with Not_found ->
+  ( *)let ms = valid_moves myboard opboard in
   if List.length ms = 0 then
     if int64_popcount myboard = 0 then (-inf, (-1,-1))
     else ((if depth > 0 then -1*(fst (deep_search opboard myboard (-1*beta) (-1*alpha) (depth-1))) else eval_board myboard opboard), (-1,-1))
@@ -312,7 +346,7 @@ let rec update_board (myboard : int64) (opboard : int64) (depth : int) (alpha : 
     (update_board myboard opboard depth alpha beta best fast_ms)
   else
     let best = (beta, (-1,-1)) in
-    (update_board myboard opboard depth alpha beta best ms))
+    (update_board myboard opboard depth alpha beta best ms)
 
 let make_empty_cells (myboard : int64) (opboard : int64) : unit =
   let board = lognot (logor myboard opboard) in
@@ -326,6 +360,8 @@ let play board color =
   let myboard = convert_board board color in
   let opboard = convert_board board ocolor in
   let emp = empty_count myboard opboard in
+  if color = 1 then print_string "I'm black\n"
+  else print_string "I'm white\n";
   print_bit_board myboard opboard;
   let ms = valid_moves myboard opboard in
     if ms = [] then
