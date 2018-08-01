@@ -14,8 +14,8 @@ let hash_table = Hashtbl.create 100000;;
 let last_hash_table = Hashtbl.create 1000000;;
 let empty_cells = Hashtbl.create 30;;
 
-let search_depth = 6
-let last_search_depth = 20
+let search_depth = 7
+let last_search_depth = 21
 
 let iinf = 1000000000000000;;
 let inf  = 1000000000000;;
@@ -257,22 +257,36 @@ let rec last_update_board myboard opboard emp best ms : (int * (int * int)) =
     let best = (-iinf, (-1,-1)) in
     (last_update_board myboard opboard emp best ms))
 
-let cell_value_list = [|  60;-10;  0; -1; -1;  0;-10; 60;
+let cell_value_list = [| 100;-10;  0; -1; -1;  0;-10;100;
                          -10;-15; -3; -3; -3; -3;-15;-10;
                            0; -3;  0; -1; -1;  0; -3;  0;
                           -1; -3; -1; -1; -1; -1; -3; -1;
                           -1; -3; -1; -1; -1; -1; -3; -1;
                            0; -3;  0; -1; -1;  0; -3;  0;
                          -10;-15; -3; -3; -3; -3;-15;-10;
-                          60;-10;  0; -1; -1;  0;-10; 60 |];;
+                         100;-10;  0; -1; -1;  0;-10;100 |];;
+
+let eval_valid_moves myboard opboard : int =
+  let ret = ref 0 in
+  for i=0 to 7 do
+    for j=0 to 7 do
+      if (int64_get (logor myboard opboard) (i*8+j) = false) && (flip_count myboard opboard (i,j) > 0) then
+          if (i,j) = (0,0) || (i,j) = (0,7) || (i,j) = (7,0) || (i,j) = (7,7) then
+            ret := !ret + 5
+          else
+            ret := !ret + 1
+      else ()
+    done
+  done;
+  !ret
 
 let eval_board myboard opboard : int =
 (*
-  let k = Random.int 3 in
-  let value = ref (k-1) in
+  let k = Random.int 5 in
+  let value = ref (k-2) in
 *)
   let value = ref 0 in
-  let pos = (List.length (valid_moves myboard opboard)) - (List.length (valid_moves opboard myboard)) in
+  let pos = (eval_valid_moves myboard opboard) - (eval_valid_moves opboard myboard) in
   (for i=0 to 63 do
     value := !value + (if (int64_get myboard i) then cell_value_list.(i) else if (int64_get opboard i) then -1*cell_value_list.(i) else 0)
   done;
@@ -325,7 +339,11 @@ let play board color =
       if (emp <= last_search_depth) then
         (make_empty_cells myboard opboard;
         let best = last_deep_search myboard opboard false in
-        Mv (((fst (snd best))+1), ((snd (snd best))+1)))
+        if fst best >= 0 then
+          Mv (((fst (snd best))+1), ((snd (snd best))+1))
+        else
+          let best = deep_search myboard opboard (-1*iinf) (search_depth-1) in
+          Mv (((fst (snd best))+1), ((snd (snd best))+1)))
       else
         let best = deep_search myboard opboard (-1*iinf) search_depth in
         Mv (((fst (snd best))+1), ((snd (snd best))+1))));;
