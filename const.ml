@@ -2,6 +2,8 @@ open Int64;;
 open Array;;
 open Hashtbl;;
 
+exception End_loop;;
+
 let dirs = [ (-1,-1); (0,-1); (1,-1); (-1,0); (1,0); (-1,1); (0,1); (1,1) ];;
 (*
 let dirs_array = [| [(1,0);(-1,0)]; [(0,1);(0,-1)]; [(1,1);(-1,-1)]; [(1,-1);(-1,1)] |];;
@@ -15,8 +17,8 @@ let empty_cells : ((int * int), unit) Hashtbl.t = Hashtbl.create 30;;
 let flip_table = Hashtbl.create 10000000;;
 *)
 
-let search_depth = 8
-let last_search_depth = 20
+let search_depth = 6
+let last_search_depth = 21
 
 let iinf = 1000000000000000;;
 let inf  = 1000000000000;;

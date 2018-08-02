@@ -1,6 +1,4 @@
 open Int64;;
-open Array;;
-open Hashtbl;;
 open Const;;
 open Utils;;
 open Flip;;

@@ -1,8 +1,5 @@
-open Int64;;
-open Array;;
-open Color;;
-open Hashtbl;;
 open Const;;
+open Int64;;
 open Utils;;
 
 let flippable_indices_line1 (myboard : int64) (opboard : int64) ((i,j) : (int * int)) : int64 =
@@ -115,9 +112,6 @@ let flip_count myboard opboard (i,j) : int =
 let is_valid_move myboard opboard (i,j) : bool =
   (int64_get (logor myboard opboard) (i*8+j) = false) && (flip_count myboard opboard (i,j) > 0);;
   (*(int64_get (logor !myboard opboard) (i*8+j) = false) && (bitboard_put (i*8+j) !myboard opboard);;*)
-
-let empty_count (myboard : int64) (opboard : int64) : int =
-  64 - (int64_popcount (logor myboard opboard));;
 
 let mix xs ys =
   List.concat (List.rev_map (fun x -> List.rev_map (fun y -> (x,y)) ys) xs);;
