@@ -58,6 +58,7 @@ let play board color =
           Mv (((fst (snd best))+1), ((snd (snd best))+1)))
       else
         let best = deep_search myboard opboard iinf (-1*iinf) search_depth in
+        (*let best = mtdf myboard opboard search_depth 0 in *)
         (print_string "predict "; print_int (fst best); print_string "\n";
          (*print_string "hash_table "; print_int (Hashtbl.length hash_table); print_string "\n"; *)
         Mv (((fst (snd best))+1), ((snd (snd best))+1))))));;

@@ -5,8 +5,8 @@ open Hashtbl;;
 exception End_loop;;
 
 let random_range = 0
-let search_depth = 7
-let last_search_depth = 19
+let search_depth = 8
+let last_search_depth = 21
 
 let mountain_weight = 10
 let solid_weight = 10
@@ -18,7 +18,7 @@ let corners = [(0,0); (0,7); (7,0); (7,7)];;
 let corners_dir = [[(1,0); (0,1)]; [(1,0);(0,-1)]; [(-1,0);(0,1)]; [(-1,0);(0,-1)]];;
 let dirs = [ (-1,-1); (0,-1); (1,-1); (-1,0); (1,0); (-1,1); (0,1); (1,1) ];;
 
-(*let hash_table = Hashtbl.create 100000;;*)
+(*let hash_table : ((int64 * int64), (int*int)) Hashtbl.t = Hashtbl.create 100000;; *)
 let last_hash_table : ((int64 * int64), (int*(int*int))) Hashtbl.t = Hashtbl.create 1000000;;
 let empty_cells : ((int * int), unit) Hashtbl.t = Hashtbl.create 30;;
 (*let flip_table = Hashtbl.create 10000000;;*)
@@ -35,3 +35,4 @@ let cell_value_list = [| 100;-10;  0; -1; -1;  0;-10;100;
                            0; -3;  0; -1; -1;  0; -3;  0;
                          -10;-15; -3; -3; -3; -3;-15;-10;
                          100;-10;  0; -1; -1;  0;-10;100 |];;
+

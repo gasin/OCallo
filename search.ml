@@ -43,6 +43,18 @@ let rec update_board (myboard : int64) (opboard : int64) (depth : int) (alpha : 
     let best = (beta, (-1,-1)) in
     (update_board myboard opboard depth alpha beta best ms)
 
+(*
+let rec mtdf_sub myboard opboard depth lower upper bound : (int * (int * int)) =
+  let ret = deep_search myboard opboard bound (bound-1) depth in
+  if lower >= upper then ret
+  else let value = (fst ret) in 
+    mtdf_sub myboard opboard depth (if value >= bound then value else lower) (if value < bound then value else upper)
+      (if lower = value then value + 1 else value)
+
+let mtdf (myboard : int64) (opboard : int64) (depth : int) (f : int) : (int * (int * int)) =
+  mtdf_sub myboard opboard depth (-1 * iinf) iinf f
+*)
+
 let last_sub_fast_search (myboard : int64) (opboard : int64) (ms : ((int * int) * int64) list) : (int * ((int * int) * int64)) list =
   List.map (fun ((i,j),k) ->
     let flip_cells = k in
@@ -68,7 +80,10 @@ let rec last_update_board (myboard : int64) (opboard : int64) (emp : int) (best 
     else last_update_board myboard opboard emp (if (fst best) < ret2 then (ret2, (i,j)) else best) (List.tl ms)))))
 
  and last_deep_search (myboard : int64) (opboard : int64) (again : bool) : (int * (int * int)) =
-  try (Hashtbl.find last_hash_table (myboard, opboard)) with Not_found ->
+  let hash = Hashtbl.find_opt last_hash_table (myboard, opboard) in
+  match hash with
+  | Some hashv -> hashv
+  | None -> 
   (let ms = new_valid_moves myboard opboard in
   let emp = empty_count myboard opboard in
   if emp = 0 then
