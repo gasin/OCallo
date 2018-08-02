@@ -26,11 +26,8 @@ let rec solid_stone myboard opboard (corners : (int * int) list) (corners_dir : 
     else (solid_stone myboard opboard (List.tl corners) (List.tl corners_dir) ret)
 
 let eval_board (myboard : int64) (opboard : int64) : int =
-(*
-  let k = Random.int 5 in
-  let value = ref (k-2) in
-*)
-  let value = ref 0 in
+  let k = Random.int random_range in
+  let value = ref (k / 2) in
   (for i=0 to 7 do
     for j=0 to 7 do
       if int64_get myboard (i*8+j) then
