@@ -46,8 +46,8 @@ let play board color =
       Pass
     else
       (if emp >= 59 then Hashtbl.clear last_hash_table else ();
+      (make_empty_cells myboard opboard;
       if (emp <= last_search_depth) then
-        (make_empty_cells myboard opboard;
         let best = last_deep_search myboard opboard false in
         (print_string "decided "; print_int (fst best); print_string "\n";
          print_string "hash_table "; print_int (Hashtbl.length last_hash_table); print_string "\n";
@@ -55,12 +55,12 @@ let play board color =
           Mv (((fst (snd best))+1), ((snd (snd best))+1))
         else
           let best = deep_search myboard opboard iinf (-1*iinf) (search_depth-1) in
-          Mv (((fst (snd best))+1), ((snd (snd best))+1))))
+          Mv (((fst (snd best))+1), ((snd (snd best))+1)))
       else
         let best = deep_search myboard opboard iinf (-1*iinf) search_depth in
         (print_string "predict "; print_int (fst best); print_string "\n";
          (*print_string "hash_table "; print_int (Hashtbl.length hash_table); print_string "\n"; *)
-        Mv (((fst (snd best))+1), ((snd (snd best))+1)))));;
+        Mv (((fst (snd best))+1), ((snd (snd best))+1))))));;
 
 let doMove board com color =
   match com with

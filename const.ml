@@ -4,9 +4,12 @@ open Hashtbl;;
 
 exception End_loop;;
 
-let random_range = 5
-let search_depth = 6
-let last_search_depth = 21
+let random_range = 0
+let search_depth = 7
+let last_search_depth = 19
+
+let mountain_weight = 10
+let solid_weight = 10
 
 let iinf = 1000000000000000;;
 let inf  = 1000000000000;;
@@ -20,7 +23,8 @@ let last_hash_table : ((int64 * int64), (int*(int*int))) Hashtbl.t = Hashtbl.cre
 let empty_cells : ((int * int), unit) Hashtbl.t = Hashtbl.create 30;;
 (*let flip_table = Hashtbl.create 10000000;;*)
 
-let edge_mountain = [| 0x7e00000000000000L;   0x80808080808000L;   0x1010101010100L; 0x7eL |];;
+let edge_line     =     [| 0xff00000000000000L; 0x8080808080808080L; 0x101010101010101L; 0xffL |];;
+let edge_mountain =     [| 0x7e00000000000000L;   0x80808080808000L;   0x1010101010100L; 0x7eL |];;
 let edge_mountain_sub = [| 0x8100000000000000L; 0x8000000000000080L; 0x100000000000001L; 0x81L |];;
 
 let cell_value_list = [| 100;-10;  0; -1; -1;  0;-10;100;

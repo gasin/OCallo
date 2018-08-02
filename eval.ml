@@ -26,23 +26,48 @@ let rec solid_stone myboard opboard (corners : (int * int) list) (corners_dir : 
     else (solid_stone myboard opboard (List.tl corners) (List.tl corners_dir) ret)
 
 let eval_board (myboard : int64) (opboard : int64) : int =
-  let k = Random.int random_range in
+  let k = if random_range = 0 then 0 else Random.int random_range in
   let value = ref (k / 2) in
-  (for i=0 to 7 do
+  let my_low_board  = (to_int myboard) land 0xffffffff in
+  let my_high_board = (to_int (shift_right_logical myboard 32)) land 0xffffffff in
+  let op_low_board  = (to_int opboard) land 0xffffffff in
+  let op_high_board = (to_int (shift_right_logical opboard 32)) land 0xffffffff in
+  (for i=0 to 3 do
     for j=0 to 7 do
-      if int64_get myboard (i*8+j) then
+      if int_get my_low_board (i*8+j) then
         value := !value + cell_value_list.(i*8+j)
-      else if int64_get opboard (i*8+j) then
+      else if int_get op_low_board (i*8+j) then
         value := !value - cell_value_list.(i*8+j)
       else
         (if (flip_count myboard opboard (i,j) > 0) then
-          if (i,j) = (0,0) || (i,j) = (0,7) || (i,j) = (7,0) || (i,j) = (7,7) then
+          if (i,j) = (0,0) || (i,j) = (0,7) then
             value := !value + 25
           else
             value := !value + 5
          else ();
          if (flip_count opboard myboard (i,j) > 0) then
-          if (i,j) = (0,0) || (i,j) = (0,7) || (i,j) = (7,0) || (i,j) = (7,7) then
+          if (i,j) = (0,0) || (i,j) = (0,7) then
+            value := !value - 25
+          else
+            value := !value - 5
+         else ())
+    done
+  done;
+  for i=4 to 7 do
+    for j=0 to 7 do
+      if int_get my_high_board ((i-4)*8+j) then
+        value := !value + cell_value_list.(i*8+j)
+      else if int_get op_high_board ((i-4)*8+j) then
+        value := !value - cell_value_list.(i*8+j)
+      else
+        (if (flip_count myboard opboard (i,j) > 0) then
+          if (i,j) = (7,0) || (i,j) = (7,7) then
+            value := !value + 25
+          else
+            value := !value + 5
+         else ();
+         if (flip_count opboard myboard (i,j) > 0) then
+          if (i,j) = (7,0) || (i,j) = (7,7) then
             value := !value - 25
           else
             value := !value - 5
@@ -51,10 +76,10 @@ let eval_board (myboard : int64) (opboard : int64) : int =
   done;
   for i=0 to 3 do
     value := !value + if (equal (logand myboard edge_mountain_sub.(i)) 0x0L && equal (logand opboard edge_mountain_sub.(i)) 0x0L) then
-                        if equal (logand myboard edge_mountain.(i)) edge_mountain.(i) then 10
-                        else if equal (logand opboard edge_mountain.(i)) edge_mountain.(i) then -10
+                        if equal (logand myboard edge_mountain.(i)) edge_mountain.(i) then mountain_weight
+                        else if equal (logand opboard edge_mountain.(i)) edge_mountain.(i) then -mountain_weight
                         else 0
                       else 0;
   done;
-  value := !value + ((solid_stone myboard opboard corners corners_dir 0) * 10);
+  value := !value + ((solid_stone myboard opboard corners corners_dir 0) * solid_weight);
   !value);;

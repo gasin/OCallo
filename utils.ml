@@ -1,6 +1,9 @@
 open Int64;;
 open Const;;
 
+let int_get (x : int) (i : int) : bool =
+  x land (1 lsl i) > 0;;
+
 let int64_get (board : int64) (i : int) : bool =
   if i >= 32 then
     ((to_int (shift_right_logical board 32)) land (1 lsl (i-32))) > 0
