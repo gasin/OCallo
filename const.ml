@@ -4,7 +4,7 @@ open Hashtbl;;
 
 exception End_loop;;
 
-let random_range = 5
+let random_range = 10
 let search_depth = 8
 let last_search_depth = 20
 
