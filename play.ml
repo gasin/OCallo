@@ -5,6 +5,7 @@ open Utils;;
 open Flip;;
 open Search;;
 open Extra;;
+open Joseki;;
 
 let init_board () =
   let board = Array.make_matrix 10 10 none in
@@ -41,6 +42,15 @@ let play board color =
   if color = 2 then print_string "I'm black\n"
   else print_string "I'm white\n";
   print_bit_board myboard opboard;
+  let jos = (if color = 2 then Hashtbl.find_all joseki_table (myboard, opboard) else Hashtbl.find_all joseki_table (opboard, myboard)) in
+  if jos <> [] then
+    let k = Random.int (List.length jos) in
+    (for i=0 to ((List.length jos)-1) do
+      print_int (snd (List.nth jos i));
+      print_int (fst (List.nth jos i));
+    done;
+    Mv ((snd (List.nth jos k))+1,(fst (List.nth jos k))+1)) 
+  else
   let ms = valid_moves myboard opboard in
     if ms = [] then
       Pass
@@ -52,16 +62,16 @@ let play board color =
         (print_string "decided "; print_int (fst best); print_string "\n";
          print_string "hash_table "; print_int (Hashtbl.length last_hash_table); print_string "\n";
         if fst best >= 0 then
-          Mv (((fst (snd best))+1), ((snd (snd best))+1))
+          Mv (((snd (snd best))+1), ((fst (snd best))+1))
         else
           let best = deep_search myboard opboard (-1*iinf) iinf (search_depth-1) in
-          Mv (((fst (snd best))+1), ((snd (snd best))+1)))
+          Mv (((snd (snd best))+1), ((fst (snd best))+1)))
       else
         let best = deep_search myboard opboard (-1*iinf) iinf search_depth in
         (*let best = mtdf myboard opboard search_depth 0 in *)
         (print_string "predict "; print_int (fst best); print_string "\n";
          (*print_string "hash_table "; print_int (Hashtbl.length hash_table); print_string "\n"; *)
-        Mv (((fst (snd best))+1), ((snd (snd best))+1))))));;
+        Mv (((snd (snd best))+1), ((fst (snd best))+1))))));;
 
 let doMove board com color =
   match com with

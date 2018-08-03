@@ -97,19 +97,19 @@ let empty_count (myboard : int64) (opboard : int64) : int =
 let rec get_empty_area (board : int64) (i : int) : (int * int) list =
   if i = 64 then []
   else if int64_get board i = false then (((i lsr 3), (i land 7)) :: (get_empty_area board (i+1)))
-  else (get_empty_area board (i+1))
+  else (get_empty_area board (i+1));;
 
 let make_empty_cells (myboard : int64) (opboard : int64) : unit =
   let board = lognot (logor myboard opboard) in
   for i=0 to 63 do
     if int64_get board i then Hashtbl.add empty_cells (i lsr 3, i land 7) () else ();
-  done
+  done;;
 
 let convert_board board color : int64 =
   let ret = ref 0x0L in
   for i=1 to 8 do
     for j=1 to 8 do
-      if board.(i).(j) = color then ret := int64_flip !ret ((i-1)*8+(j-1))
+      if board.(i).(j) = color then ret := int64_flip !ret ((j-1)*8+(i-1))
     done
   done;
   !ret;;
@@ -117,9 +117,9 @@ let convert_board board color : int64 =
 let print_bit_board myboard opboard =
   print_endline " |A B C D E F G H ";
   print_endline "-+----------------";
-  for j=0 to 7 do
-    print_int j; print_string "|";
-    for i=0 to 7 do
+  for i=0 to 7 do
+    print_int (i+1); print_string "|";
+    for j=0 to 7 do
       if int64_get myboard (i*8+j) then print_string "X"
       else if int64_get opboard (i*8+j) then print_string "O"
       else print_string " ";
