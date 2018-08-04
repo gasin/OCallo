@@ -1,21 +1,35 @@
+open Int64;;
 open Hashtbl;;
+open Flip;;
+open Utils;;
 
-let joseki_table : (string, int) Hashtbl.t = Hashtbl.create 10000000;;
+let joseki_table : ((int64 * int64), int) Hashtbl.t = Hashtbl.create 10000000;;
 
-let rotation = ref 0;;
-let pre_board = ref 0x0L;;
-let hand_history = ref "";;
+let joseki_counter = ref 0;;
 
-let rec read_file chan history : unit =
+let rec read_file chan (myboard, opboard) : unit =
   let a = input_char chan in
   if a = '\n' then
-    read_file chan ""
+    (joseki_counter := !joseki_counter + 1;
+    if !joseki_counter mod 10000 = 0 then
+      (print_int !joseki_counter;
+      print_string "\n")
+    else ();
+    read_file chan (0x0000000810000000L, 0x0000001008000000L))
   else
     let num = (Char.code a)-33 in
-      (Hashtbl.add joseki_table history num;
-      read_file chan (history ^ (Char.escaped a)))
+    let x = num lsr 3 in let y = num land 3 in
+    (Hashtbl.add joseki_table (myboard,opboard) num;
+    flush_all ();
+    let flip_cells = flippable_indices myboard opboard (x,y) in
+    let new_myboard = logxor (int64_flip myboard num) flip_cells in  
+    let new_opboard = logxor opboard flip_cells in
+    if valid_moves new_opboard new_myboard = [] then
+      read_file chan (new_myboard, new_opboard)
+    else
+      read_file chan (new_opboard, new_myboard))
 
-let make_opening_book () : unit =
+let loading_book () : unit =
   let chan = open_in "./joseki/xxx_comp.gam" in
-  (try read_file chan "" with End_of_file ->
+  (try read_file chan (0x0000000810000000L, 0x0000001008000000L) with End_of_file ->
   close_in chan)

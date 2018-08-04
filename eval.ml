@@ -41,15 +41,15 @@ let eval_board (myboard : int64) (opboard : int64) : int =
       else
         (if (flip_count myboard opboard (i,j) > 0) then
           if (i,j) = (0,0) || (i,j) = (0,7) then
-            value := !value + 25
+            value := !value + next_put_corner_weight
           else
-            value := !value + 5
+            value := !value + next_put_weight
          else ();
          if (flip_count opboard myboard (i,j) > 0) then
           if (i,j) = (0,0) || (i,j) = (0,7) then
-            value := !value - 25
+            value := !value - next_put_corner_weight
           else
-            value := !value - 5
+            value := !value - next_put_weight
          else ())
     done
   done;
@@ -62,15 +62,15 @@ let eval_board (myboard : int64) (opboard : int64) : int =
       else
         (if (flip_count myboard opboard (i,j) > 0) then
           if (i,j) = (7,0) || (i,j) = (7,7) then
-            value := !value + 25
+            value := !value + next_put_corner_weight
           else
-            value := !value + 5
+            value := !value + next_put_weight
          else ();
          if (flip_count opboard myboard (i,j) > 0) then
           if (i,j) = (7,0) || (i,j) = (7,7) then
-            value := !value - 25
+            value := !value - next_put_corner_weight
           else
-            value := !value - 5
+            value := !value - next_put_weight
          else ())
     done
   done;

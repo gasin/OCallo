@@ -4,12 +4,14 @@ open Hashtbl;;
 
 exception End_loop;;
 
-let random_range = 5
-let search_depth = 8
-let last_search_depth = 19
+let random_range = 0
+let search_depth = 1
+let last_search_depth = 20
 
 let mountain_weight = 10
 let solid_weight = 10
+let next_put_weight = 5
+let next_put_corner_weight = 25
 
 let iinf = 1000000000000000;;
 let inf  = 1000000000000;;

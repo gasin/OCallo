@@ -6,10 +6,7 @@ int main() {
     ofstream ofs("xxx_comp.gam");
 
     string str1, str2, str3;
-    int skip = 0;
     while (ifs >> str1 >> str2 >> str3) {
-        skip++;
-        if (skip%2) continue;
         int cnt = 0;
         int val = 0;
         int len = 0;
@@ -27,7 +24,7 @@ int main() {
                 cnt = 0;
                 val = 0;
             }
-            if (len > 40) break;
+            if (len > 45) break;
         }
         ofs << endl;
     }

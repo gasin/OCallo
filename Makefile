@@ -1,5 +1,5 @@
 RESULT =reversi
-SOURCES=color.ml command.ml commandParser.mly commandLexer.mll const.ml utils.ml joseki.ml flip.ml eval.ml search.ml extra.ml play.ml main.ml 
+SOURCES= const.ml utils.ml flip.ml joseki.ml eval.ml search.ml main.ml 
 LIBS=unix 
 all: native-code
 
