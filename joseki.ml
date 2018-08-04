@@ -18,8 +18,16 @@ let rec read_file chan (myboard, opboard) : unit =
     read_file chan (0x0000000810000000L, 0x0000001008000000L))
   else
     let num = (Char.code a)-33 in
-    let x = num lsr 3 in let y = num land 3 in
+    let x = num lsr 3 in let y = num land 7 in
     (Hashtbl.add joseki_table (myboard,opboard) num;
+    if (!joseki_counter mod 10000 = 0) && (empty_count myboard opboard = 30) then
+      (print_bit_board myboard opboard;
+      print_int x; print_string " "; print_int y; print_string "\n")
+    else ();
+    if (!joseki_counter mod 10000 = 0) && (empty_count myboard opboard = 31) then
+      (print_bit_board myboard opboard;
+      print_int x; print_string " "; print_int y; print_string "\n")
+    else ();
     flush_all ();
     let flip_cells = flippable_indices myboard opboard (x,y) in
     let new_myboard = logxor (int64_flip myboard num) flip_cells in  

@@ -41,15 +41,15 @@ let eval_board (myboard : int64) (opboard : int64) : int =
       else
         (if (flip_count myboard opboard (i,j) > 0) then
           if (i,j) = (0,0) || (i,j) = (0,7) then
-            value := !value + next_put_corner_weight
+            value := !value + !next_put_corner_weight
           else
-            value := !value + next_put_weight
+            value := !value + !next_put_weight
          else ();
          if (flip_count opboard myboard (i,j) > 0) then
           if (i,j) = (0,0) || (i,j) = (0,7) then
-            value := !value - next_put_corner_weight
+            value := !value - !next_put_corner_weight
           else
-            value := !value - next_put_weight
+            value := !value - !next_put_weight
          else ())
     done
   done;
@@ -62,24 +62,24 @@ let eval_board (myboard : int64) (opboard : int64) : int =
       else
         (if (flip_count myboard opboard (i,j) > 0) then
           if (i,j) = (7,0) || (i,j) = (7,7) then
-            value := !value + next_put_corner_weight
+            value := !value + !next_put_corner_weight
           else
-            value := !value + next_put_weight
+            value := !value + !next_put_weight
          else ();
          if (flip_count opboard myboard (i,j) > 0) then
           if (i,j) = (7,0) || (i,j) = (7,7) then
-            value := !value - next_put_corner_weight
+            value := !value - !next_put_corner_weight
           else
-            value := !value - next_put_weight
+            value := !value - !next_put_weight
          else ())
     done
   done;
   for i=0 to 3 do
     value := !value + if (equal (logand myboard edge_mountain_sub.(i)) 0x0L && equal (logand opboard edge_mountain_sub.(i)) 0x0L) then
-                        if equal (logand myboard edge_mountain.(i)) edge_mountain.(i) then mountain_weight
-                        else if equal (logand opboard edge_mountain.(i)) edge_mountain.(i) then -mountain_weight
+                        if equal (logand myboard edge_mountain.(i)) edge_mountain.(i) then !mountain_weight
+                        else if equal (logand opboard edge_mountain.(i)) edge_mountain.(i) then -1 * !mountain_weight
                         else 0
                       else 0;
   done;
-  value := !value + ((solid_stone myboard opboard corners corners_dir 0) * solid_weight);
+  value := !value + ((solid_stone myboard opboard corners corners_dir 0) * !solid_weight);
   !value);;
