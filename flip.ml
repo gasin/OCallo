@@ -76,17 +76,6 @@ let flippable_indices_line8 (myboard : int64) (opboard : int64) ((i,j) : (int * 
   else flippable_indices_line_sub8 myboard opboard (i+1,j+1) (int64_flip 0x0L (i*8+j));;
 
 let flippable_indices (myboard : int64) (opboard : int64) ((i,j) : (int * int)) : int64 =
-(*
-  let ind = ref 0 in
-  List.fold_left (fun ret mask ->
-                 (try Hashtbl.find flip_table ((i*8+j), ((logand myboard mask), (logand opboard mask)))
-                  with Not_found ->
-                  (let v : int64 = List.fold_left (fun (x : int64) ((di,dj) : (int * int)) -> logor x (flippable_indices_line myboard opboard (di,dj) (i+di,j+dj))) 0x0L dirs_array.(!ind) in
-                 (Hashtbl.add flip_table ((i*8+j), ((logand myboard mask), (logand opboard mask))) v; ind := !ind+1; v))))
-                  0x0L flip_mask.(i*8+j);;
-*)
-  (*bitboard_flip (i*8+j) myboard opboard;;*)
-  (*List.fold_left (fun x (di,dj) -> logor x (flippable_indices_line myboard opboard (di,dj) (i+di,j+dj))) 0x0L dirs;;*)
   let ret = ref 0x0L in
   (
   ret := logor !ret (flippable_indices_line1 myboard opboard (i-1,j-1));
@@ -98,6 +87,17 @@ let flippable_indices (myboard : int64) (opboard : int64) ((i,j) : (int * int)) 
   ret := logor !ret (flippable_indices_line7 myboard opboard (  i,j+1));
   ret := logor !ret (flippable_indices_line8 myboard opboard (i+1,j+1));
   !ret)
+(*
+  let ind = ref 0 in
+  List.fold_left (fun ret mask ->
+                 (try Hashtbl.find flip_table ((i*8+j), ((logand myboard mask), (logand opboard mask)))
+                  with Not_found ->
+                  (let v : int64 = List.fold_left (fun (x : int64) ((di,dj) : (int * int)) -> logor x (flippable_indices_line myboard opboard (di,dj) (i+di,j+dj))) 0x0L dirs_array.(!ind) in
+                 (Hashtbl.add flip_table ((i*8+j), ((logand myboard mask), (logand opboard mask))) v; ind := !ind+1; v))))
+                  0x0L flip_mask.(i*8+j);;
+*)
+  (*bitboard_flip (i*8+j) myboard opboard;;*)
+  (*List.fold_left (fun x (di,dj) -> logor x (flippable_indices_line myboard opboard (di,dj) (i+di,j+dj))) 0x0L dirs;;*)
 
 let rec flippable_indices_count_line_sub1 myboard opboard (i,j) ret : int = 
   if i < 0 || j < 0 then 0

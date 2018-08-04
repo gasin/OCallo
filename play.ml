@@ -67,10 +67,6 @@ let play board color =
   if ms = [] then Pass
   else if jos <> [] then
     let k = Random.int (List.length jos) in
-    (*for i=0 to ((List.length jos)-1) do
-      print_int (snd (List.nth jos i)); print_string " ";
-      print_int (fst (List.nth jos i)); print_string "\n"
-    done;*)
     let next_pos = List.nth jos k in
     let rot_pos = rot_position next_pos !rotation in
     let next_x = (rot_pos lsr 3) in let next_y = (rot_pos land 7) in
@@ -99,9 +95,7 @@ let play board color =
     else
       let best = deep_search myboard opboard (-1*iinf) iinf search_depth in
       let (x,y) = snd best in
-      (*let best = mtdf myboard opboard search_depth 0 in *)
       (print_string "predict "; print_int (fst best); print_string "\n";
-       (*print_string "hash_table "; print_int (Hashtbl.length hash_table); print_string "\n"; *)
       hand_history := !hand_history ^ (pos_to_string (x*8+y) !rotation);
       pre_board := int64_flip !pre_board (x*8+y);
       Mv (y+1, x+1))));;
