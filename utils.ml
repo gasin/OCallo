@@ -105,6 +105,39 @@ let make_empty_cells (myboard : int64) (opboard : int64) : unit =
     if int64_get board i then Hashtbl.add empty_cells (i lsr 3, i land 7) () else ();
   done;;
 
+let rot_board board rot : int64 =
+  let ret = ref 0x0L in
+  for i=0 to 7 do
+    for j=0 to 7 do
+      if int64_get board (i*8+j) then
+        if rot = 0 then
+          ret := int64_flip !ret (i*8+j)
+        else if rot = 1 then
+          ret := int64_flip !ret (j*8+i)
+        else if rot = 2 then
+          ret := int64_flip !ret ((7-i)*8+7-j)
+        else
+          ret := int64_flip !ret ((7-j)*8+7-i)
+      else ()
+    done
+  done;
+  !ret;;
+
+let rot_position (pos : int) (rot : int) : int =
+  let x = pos lsr 3 in
+  let y = pos land 7 in
+  if rot = 0 then
+    x*8+y
+  else if rot = 1 then
+    y*8+x
+  else if rot = 2 then
+    (7-x)*8+7-y
+  else
+    (7-y)*8+7-x;;
+
+let pos_to_string pos rot : string =
+  Char.escaped (Char.chr ((rot_position pos rot)+33))
+
 let convert_board board color : int64 =
   let ret = ref 0x0L in
   for i=1 to 8 do

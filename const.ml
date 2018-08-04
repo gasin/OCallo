@@ -5,8 +5,8 @@ open Hashtbl;;
 exception End_loop;;
 
 let random_range = 5
-let search_depth = 5
-let last_search_depth = 10
+let search_depth = 8
+let last_search_depth = 19
 
 let mountain_weight = 10
 let solid_weight = 10
