@@ -143,7 +143,7 @@ let client host port =
   wait_start (ic,oc)
 
 let main () =
-  (make_opening_book ();
+  ((*make_opening_book ();*)
   let _ = Random.self_init () in
   let _ = Arg.parse options (fun _ -> ()) usage_msg in
   let (host,port) = (!opt_host, !opt_port) in
