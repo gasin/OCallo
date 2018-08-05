@@ -38,7 +38,7 @@ let eval_board (myboard : int64) (opboard : int64) : int =
   let opcorner_mask = ref 0 in
   (
   for i=0 to 5 do
-    if stage_sepa.(i) <= stone_num then
+    if stage_sepa.(i) < stone_num then
       this_stage := i+1
     else ()
   done;
@@ -97,12 +97,12 @@ let eval_board (myboard : int64) (opboard : int64) : int =
     opcorner_mask := 0;
     for j=0 to 3 do
       if int64_get myboard around_corner.(i).(j) then
-        mycorner_mask := !mycorner_mask land (1 lsl j)
+        mycorner_mask := !mycorner_mask lor (1 lsl j)
       else if int64_get opboard around_corner.(i).(j) then
-        opcorner_mask := !opcorner_mask land (1 lsl j)
+        opcorner_mask := !opcorner_mask lor (1 lsl j)
       else ()
     done;
-    value := !value + around_corner.(!mycorner_mask).(!opcorner_mask)
+    value := !value + corner_weight.(!this_stage).(!mycorner_mask).(!opcorner_mask)
     )
   done;
 

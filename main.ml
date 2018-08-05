@@ -4,6 +4,7 @@ open Joseki
 open Command
 open Play
 open Color
+open Parameter
 open Printf
 
 let opt_verbose     = ref false
@@ -144,6 +145,7 @@ let client host port =
 
 let main () =
   ((*make_opening_book ();*)
+  loading_parameters ();
   let _ = Random.self_init () in
   let _ = Arg.parse options (fun _ -> ()) usage_msg in
   let (host,port) = (!opt_host, !opt_port) in
