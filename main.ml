@@ -4,6 +4,7 @@ open Utils;;
 open Int64;;
 open Search;;
 open Const;;
+open Parameter;;
 
 open Joseki
 
@@ -84,20 +85,34 @@ let rec corner_para_tune diff i j k chan =
     corner_weight.(i).(j).(k) <- corner_weight.(i).(j).(k) - diff
   else
     (best := !simulation_score;
+    (*
     output_string chan ((string_of_int !simulation_score) ^ " / " ^ (string_of_int !simulation_counter) ^ "\n");
+    *)
+
+    print_string ((string_of_int !simulation_score) ^ " / " ^ (string_of_int !simulation_counter) ^ "\n");
     for jj=0 to 15 do
       (
       for kk=0 to 15 do
+          (*
         output_string chan ((string_of_int corner_weight.(i).(jj).(kk)) ^ " ")
+        *)
+        print_string ((string_of_int corner_weight.(i).(jj).(kk)) ^ " ")
       done;
+      (*
       output_string chan "\n"
+      *)
+      print_string "\n"
       )
     done;
+    (*
     output_string chan "\n";
+    *)
+    print_string "\n";
     corner_para_tune diff i j k chan)
   )
 
 let main () =
+  loading_parameters ();
   loading_book ();
   print_string "loaded\n";
   flush_all ();
@@ -139,17 +154,31 @@ let main () =
     simulation_counter := 0;
     Hashtbl.iter translate joseki_table;
     best := !simulation_score;
+    (*
     output_string chan ((string_of_int !simulation_score) ^ " / " ^ (string_of_int !simulation_counter) ^ "\n");
+    *)
+    print_string ((string_of_int !simulation_score) ^ " / " ^ (string_of_int !simulation_counter) ^ "\n");
     for jj=0 to 15 do
       (
       for kk=0 to 15 do
+          (*
         output_string chan ((string_of_int corner_weight.(i).(jj).(kk)) ^ " ")
+        *)
+        print_string ((string_of_int corner_weight.(i).(jj).(kk)) ^ " ")
       done;
+      (*
       output_string chan "\n"
+      *)
+      print_string "\n"
       )
     done;
+    (*
     output_string chan "\n";
+    *)
+    print_string "\n";
+    close_out chan
 
+(*
     for j=0 to 15 do
       for k=0 to 15 do
         (print_int j; print_string " "; print_int k; print_newline ();
@@ -160,6 +189,7 @@ let main () =
       done
     done;
     close_out chan
+*)
     )
  done;;
 
