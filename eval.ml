@@ -32,7 +32,17 @@ let eval_board (myboard : int64) (opboard : int64) : int =
   let my_high_board = (to_int (shift_right_logical myboard 32)) land 0xffffffff in
   let op_low_board  = (to_int opboard) land 0xffffffff in
   let op_high_board = (to_int (shift_right_logical opboard 32)) land 0xffffffff in
-  (for i=0 to 3 do
+  let stone_num = int64_popcount (logor myboard opboard) in
+  let this_stage = ref 0 in
+  let mycorner_mask = ref 0 in
+  let opcorner_mask = ref 0 in
+  (
+  for i=0 to 5 do
+    if stage_sepa.(i) <= stone_num then
+      this_stage := i+1
+    else ()
+  done;
+  for i=0 to 3 do
     for j=0 to 7 do
       if int_get my_low_board (i*8+j) then
         value := !value + cell_value_list.(i*8+j)
@@ -41,15 +51,15 @@ let eval_board (myboard : int64) (opboard : int64) : int =
       else
         (if (flip_count myboard opboard (i,j) > 0) then
           if (i,j) = (0,0) || (i,j) = (0,7) then
-            value := !value + !next_put_corner_weight
+            value := !value + next_put_corner_weight.(!this_stage)
           else
-            value := !value + !next_put_weight
+            value := !value + next_put_weight.(!this_stage)
          else ();
          if (flip_count opboard myboard (i,j) > 0) then
           if (i,j) = (0,0) || (i,j) = (0,7) then
-            value := !value - !next_put_corner_weight
+            value := !value - next_put_corner_weight.(!this_stage)
           else
-            value := !value - !next_put_weight
+            value := !value - next_put_weight.(!this_stage)
          else ())
     done
   done;
@@ -62,24 +72,39 @@ let eval_board (myboard : int64) (opboard : int64) : int =
       else
         (if (flip_count myboard opboard (i,j) > 0) then
           if (i,j) = (7,0) || (i,j) = (7,7) then
-            value := !value + !next_put_corner_weight
+            value := !value + next_put_corner_weight.(!this_stage)
           else
-            value := !value + !next_put_weight
+            value := !value + next_put_weight.(!this_stage)
          else ();
          if (flip_count opboard myboard (i,j) > 0) then
           if (i,j) = (7,0) || (i,j) = (7,7) then
-            value := !value - !next_put_corner_weight
+            value := !value - next_put_corner_weight.(!this_stage)
           else
-            value := !value - !next_put_weight
+            value := !value - next_put_weight.(!this_stage)
          else ())
     done
   done;
   for i=0 to 3 do
     value := !value + if (equal (logand myboard edge_mountain_sub.(i)) 0x0L && equal (logand opboard edge_mountain_sub.(i)) 0x0L) then
-                        if equal (logand myboard edge_mountain.(i)) edge_mountain.(i) then !mountain_weight
-                        else if equal (logand opboard edge_mountain.(i)) edge_mountain.(i) then -1 * !mountain_weight
+                        if equal (logand myboard edge_mountain.(i)) edge_mountain.(i) then mountain_weight.(!this_stage)
+                        else if equal (logand opboard edge_mountain.(i)) edge_mountain.(i) then -1*mountain_weight.(!this_stage)
                         else 0
                       else 0;
   done;
-  value := !value + ((solid_stone myboard opboard corners corners_dir 0) * !solid_weight);
+  for i=0 to 3 do
+    (
+    mycorner_mask := 0;
+    opcorner_mask := 0;
+    for j=0 to 3 do
+      if int64_get myboard around_corner.(i).(j) then
+        mycorner_mask := !mycorner_mask land (1 lsl j)
+      else if int64_get opboard around_corner.(i).(j) then
+        opcorner_mask := !opcorner_mask land (1 lsl j)
+      else ()
+    done;
+    value := !value + around_corner.(!mycorner_mask).(!opcorner_mask)
+    )
+  done;
+
+  value := !value + ((solid_stone myboard opboard corners corners_dir 0) * solid_weight.(!this_stage));
   !value);;
