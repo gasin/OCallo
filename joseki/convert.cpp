@@ -24,7 +24,7 @@ int main() {
                 cnt = 0;
                 val = 0;
             }
-            if (len > 45) break;
+            if (len > 52) break;
         }
         ofs << endl;
     }

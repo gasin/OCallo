@@ -9,11 +9,10 @@ let rec update_board (myboard : int64) (opboard : int64) (depth : int) (best : (
   let flip_cells = flippable_indices myboard opboard (i,j) in
   let new_myboard = logxor (int64_flip myboard (i*8+j)) flip_cells in
   let new_opboard = logxor opboard flip_cells in
-  let ret = -1 * (fst (deep_search new_opboard new_myboard (depth-1))) in
+  let ret = -1 * (eval_board new_opboard new_myboard) in
   update_board myboard opboard depth (if fst best < ret then (ret, (i,j)) else best) (List.tl ms))
 
  and deep_search (myboard : int64) (opboard : int64) (depth : int) : (int * (int * int)) =
-  if depth = 0 then (eval_board myboard opboard, (-1, -1)) else
   let ms = valid_moves myboard opboard in
   let best = (-iinf, (-1,-1)) in
   update_board myboard opboard depth best ms;;

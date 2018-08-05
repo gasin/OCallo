@@ -36,8 +36,8 @@ let translate (myboard,opboard) ans : unit =
 
 let mountain_weight_cand = [50; 40; 30; 20; 10]
 let solid_weight_cand = [50; 40; 30; 20; 10]
-let next_put_weight_cand = [20; 10; 6; 4; 2] 
-let next_put_corner_weight_cand = [20; 10; 6; 4; 2]
+let next_put_weight_cand = [ 20; 15; 10; 5; 0] 
+let next_put_corner_weight_cand = [20; 15; 10; 5; 0]
 
 let mwc_i = ref 2;;
 let swc_i = ref 2;;
@@ -80,6 +80,10 @@ let main () =
     min_stone := stage.(i).(0);
     max_stone := stage.(i).(1);
     mwc_i := 2; swc_i := 2; npwc_i := 2; npcwc_i := 2;
+    mountain_weight := List.nth mountain_weight_cand !mwc_i;
+    solid_weight := List.nth solid_weight_cand !swc_i;
+    next_put_weight := List.nth next_put_weight_cand !npwc_i;
+    next_put_corner_weight := List.nth next_put_corner_weight_cand !npcwc_i;
 
     simulation_score := 0;
     simulation_counter := 0;
