@@ -15,7 +15,7 @@ let mountain_weight = [| 30; 30; 50; 30; 50; 30; 30 |]
 let solid_weight = [| 30; 30; 30; 50; 30; 20; 20 |]
 let next_put_weight = [|5; 5; 5; 5; 5; 5; 5 |]
 let next_put_corner_weight = [|10; 5; 5; 10; 5; 10; 15|]
-let corner_weight = Array.make 16 (Array.make 16 0);;
+let corner_weight = Array.init 7 (fun _ -> Array.init 16 (fun _ -> Array.make 16 0));;
 
 for i=0 to 15 do
   for j=0 to 15 do
@@ -29,7 +29,9 @@ for i=0 to 15 do
     if ((j land 2) > 0) then w := !w+10;
     if ((j land 4) > 0) then w := !w+10;
     if ((j land 8) > 0) then w := !w+15;
-    corner_weight.(i).(j) <- !w
+    for k=0 to 6 do
+      corner_weight.(k).(i).(j) <- !w
+    done
     )
   done
 done;;
