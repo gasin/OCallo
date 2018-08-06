@@ -105,6 +105,19 @@ let eval_board (myboard : int64) (opboard : int64) : int =
     value := !value + corner_weight.(!this_stage).(!mycorner_mask).(!opcorner_mask)
     )
   done;
-
+  for i=0 to 7 do
+    (
+    mycorner_mask := 0;
+    opcorner_mask := 0;
+    for j=0 to 3 do
+      if int64_get myboard half_edge.(i).(j) then
+        mycorner_mask := !mycorner_mask lor (1 lsl j)
+      else if int64_get opboard half_edge.(i).(j) then
+        opcorner_mask := !opcorner_mask lor (1 lsl j)
+      else ()
+    done;
+    value := !value + halfedge_weight.(!this_stage).(!mycorner_mask).(!opcorner_mask)
+    )
+  done;
   value := !value + ((solid_stone myboard opboard corners corners_dir 0) * solid_weight.(!this_stage));
   !value);;

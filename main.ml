@@ -23,12 +23,13 @@ let translate (myboard,opboard) ans : unit =
   if stones < !min_stone || stones >= !max_stone then ()
   else
   (simulation_counter := !simulation_counter + 1;
-  if !simulation_counter mod 100000 = 0 then
+  if !simulation_counter mod 1000 = 0 then
       (print_int !simulation_score;
       print_string " / ";
       print_int !simulation_counter;
       print_string "\n";
-      flush_all ()
+      flush_all ();
+      raise End_this
       )
   else ();
   let now_best = deep_search myboard opboard search_depth in
@@ -41,6 +42,7 @@ let best_solid_weight = Array.make 7 0;;
 let best_next_put_weight = Array.make 7 0;;
 let best_next_put_corner_weight = Array.make 7 0;;
 let best_corner_weight = Array.init 7 (fun _ -> Array.init 16 (fun _ -> Array.make 16 0));;
+let best_halfedge_weight = Array.init 7 (fun _ -> Array.init 16 (fun _ -> Array.make 16 0));;
 
 let init () =
   for i = 0 to 6 do (
@@ -52,6 +54,11 @@ let init () =
       for k = 0 to 15 do
         best_corner_weight.(i).(j).(k) <- corner_weight.(i).(j).(k)
       done
+    done;
+    for j = 0 to 15 do
+      for k = 0 to 15 do
+        best_halfedge_weight.(i).(j).(k) <- halfedge_weight.(i).(j).(k)
+      done
     done
   )
   done
@@ -62,16 +69,18 @@ let main () = (
   print_string "loaded\n";
   flush_all ();
   init ();
-  for i = 4 to 5 do (
+  for i = 0 to 6 do (
     min_stone := stage.(i).(0);
     max_stone := stage.(i).(1);
 
     simulation_score := 0;
     simulation_counter := 0;
+    try
     Hashtbl.iter translate joseki_table;
+    with End_this -> ();
     best := !simulation_score;
 
-    for u = 0 to 50 do (
+    for u = 0 to 6 do (
       print_int i; print_string " "; print_int u; print_newline ();
       simulation_score := 0;
       simulation_counter := 0;
@@ -79,6 +88,14 @@ let main () = (
       solid_weight.(i) <- best_mountain_weight.(i) + (Random.int 100) - 50;
       next_put_weight.(i) <- best_next_put_weight.(i) + (Random.int 100) - 50;
       next_put_corner_weight.(i) <- best_next_put_corner_weight.(i) + (Random.int 100) - 50;
+      for j=0 to 15 do
+        for k=0 to 15 do
+          if (j land k) = 0  && (j <> k) then
+            halfedge_weight.(i).(j).(k) <- best_halfedge_weight.(i).(j).(k) + (Random.int 100) - 50
+          else
+            halfedge_weight.(i).(j).(k) <- 0
+        done
+      done;
       for j=0 to 15 do
         for k=0 to j do
           (
@@ -106,7 +123,9 @@ let main () = (
           else ())
         done
       done;
+      try
       Hashtbl.iter translate joseki_table;
+      with End_this -> ();
       if !simulation_score > !best then
         let chan = open_out_gen [Open_wronly; Open_append; Open_creat] 0o666 ("./data/new_stage" ^ (string_of_int i) ^ "-score.txt") in (
           output_string chan ((string_of_int !simulation_score) ^ " / " ^ (string_of_int !simulation_counter) ^ "\n");
@@ -125,6 +144,14 @@ let main () = (
               output_string chan "\n"
             )
           done;
+          for jj=0 to 15 do
+            (
+              for kk=0 to 15 do
+                output_string chan ((string_of_int halfedge_weight.(i).(jj).(kk)) ^ " ")
+              done;
+              output_string chan "\n"
+            )
+          done;
           output_string chan "\n";
           close_out chan);
         best := !simulation_score;
@@ -134,7 +161,8 @@ let main () = (
         best_next_put_corner_weight.(i) <- next_put_corner_weight.(i);
         for jj=0 to 15 do
           for kk=0 to 15 do
-            best_corner_weight.(i).(jj).(kk) <- corner_weight.(i).(jj).(kk)
+            (best_corner_weight.(i).(jj).(kk) <- corner_weight.(i).(jj).(kk);
+            best_halfedge_weight.(i).(jj).(kk) <- halfedge_weight.(i).(jj).(kk))
           done
         done
       else ();
