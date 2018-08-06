@@ -25,7 +25,8 @@ let rec read_param chan i num posi counter : unit =
       else if counter = 3 then
         next_put_corner_weight.(i) <- signed_num
       else
-        corner_weight.(i).((counter-4) / 16).((counter-4) mod 16) <- signed_num);
+        ()
+        (*corner_weight.(i).((counter-4) / 16).((counter-4) mod 16) <- signed_num*));
       print_int signed_num; print_newline ();
       read_param chan i iinf true (counter+1))
 

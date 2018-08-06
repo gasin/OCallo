@@ -144,7 +144,7 @@ let client host port =
   wait_start (ic,oc)
 
 let main () =
-  ((*make_opening_book ();*)
+  (make_opening_book ();
   loading_parameters ();
   let _ = Random.self_init () in
   let _ = Arg.parse options (fun _ -> ()) usage_msg in

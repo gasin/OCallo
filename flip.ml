@@ -9,7 +9,7 @@ let rec flippable_indices_line_sub1 myboard opboard (i,j) ret : int64 =
   else if (int64_get myboard (i*8+j)) then ret
   else 0x0L;;
 let flippable_indices_line1 (myboard : int64) (opboard : int64) ((i,j) : (int * int)) : int64 =
-  if i < 0 || j < 0 || (int64_get opboard (i*8+j) = false) then 0x0L
+  if i <= 0 || j <= 0 || (int64_get opboard (i*8+j) = false) then 0x0L
   else flippable_indices_line_sub1 myboard opboard (i-1,j-1) (int64_flip 0x0L (i*8+j));;
 
 let rec flippable_indices_line_sub2 myboard opboard (i,j) ret : int64 = 
@@ -18,7 +18,7 @@ let rec flippable_indices_line_sub2 myboard opboard (i,j) ret : int64 =
   else if (int64_get myboard (i*8+j)) then ret
   else 0x0L;;
 let flippable_indices_line2 (myboard : int64) (opboard : int64) ((i,j) : (int * int)) : int64 =
-  if j < 0 || (int64_get opboard (i*8+j) = false) then 0x0L
+  if j <= 0 || (int64_get opboard (i*8+j) = false) then 0x0L
   else flippable_indices_line_sub2 myboard opboard (i,j-1) (int64_flip 0x0L (i*8+j));;
 
 let rec flippable_indices_line_sub3 myboard opboard (i,j) ret : int64 = 
@@ -27,7 +27,7 @@ let rec flippable_indices_line_sub3 myboard opboard (i,j) ret : int64 =
   else if (int64_get myboard (i*8+j)) then ret
   else 0x0L;;
 let flippable_indices_line3 (myboard : int64) (opboard : int64) ((i,j) : (int * int)) : int64 =
-  if i > 7 || j < 0 || (int64_get opboard (i*8+j) = false) then 0x0L
+  if i >= 7 || j <= 0 || (int64_get opboard (i*8+j) = false) then 0x0L
   else flippable_indices_line_sub3 myboard opboard (i+1,j-1) (int64_flip 0x0L (i*8+j));;
 
 let rec flippable_indices_line_sub4 myboard opboard (i,j) ret : int64 = 
@@ -36,7 +36,7 @@ let rec flippable_indices_line_sub4 myboard opboard (i,j) ret : int64 =
   else if (int64_get myboard (i*8+j)) then ret
   else 0x0L;;
 let flippable_indices_line4 (myboard : int64) (opboard : int64) ((i,j) : (int * int)) : int64 =
-  if i < 0 || (int64_get opboard (i*8+j) = false) then 0x0L
+  if i <= 0 || (int64_get opboard (i*8+j) = false) then 0x0L
   else flippable_indices_line_sub4 myboard opboard (i-1,j) (int64_flip 0x0L (i*8+j));;
 
 let rec flippable_indices_line_sub5 myboard opboard (i,j) ret : int64 = 
@@ -45,7 +45,7 @@ let rec flippable_indices_line_sub5 myboard opboard (i,j) ret : int64 =
   else if (int64_get myboard (i*8+j)) then ret
   else 0x0L;;
 let flippable_indices_line5 (myboard : int64) (opboard : int64) ((i,j) : (int * int)) : int64 =
-  if i > 7 || (int64_get opboard (i*8+j) = false) then 0x0L
+  if i >= 7 || (int64_get opboard (i*8+j) = false) then 0x0L
   else flippable_indices_line_sub5 myboard opboard (i+1,j) (int64_flip 0x0L (i*8+j));;
 
 let rec flippable_indices_line_sub6 myboard opboard (i,j) ret : int64 = 
@@ -54,7 +54,7 @@ let rec flippable_indices_line_sub6 myboard opboard (i,j) ret : int64 =
   else if (int64_get myboard (i*8+j)) then ret
   else 0x0L;;
 let flippable_indices_line6 (myboard : int64) (opboard : int64) ((i,j) : (int * int)) : int64 =
-  if i < 0 || j > 7 || (int64_get opboard (i*8+j) = false) then 0x0L
+  if i <= 0 || j >= 7 || (int64_get opboard (i*8+j) = false) then 0x0L
   else flippable_indices_line_sub6 myboard opboard (i-1,j+1) (int64_flip 0x0L (i*8+j));;
 
 let rec flippable_indices_line_sub7 myboard opboard (i,j) ret : int64 = 
@@ -63,7 +63,7 @@ let rec flippable_indices_line_sub7 myboard opboard (i,j) ret : int64 =
   else if (int64_get myboard (i*8+j)) then ret
   else 0x0L;;
 let flippable_indices_line7 (myboard : int64) (opboard : int64) ((i,j) : (int * int)) : int64 =
-  if j > 7 || (int64_get opboard (i*8+j) = false) then 0x0L
+  if j >= 7 || (int64_get opboard (i*8+j) = false) then 0x0L
   else flippable_indices_line_sub7 myboard opboard (i,j+1) (int64_flip 0x0L (i*8+j));;
 
 let rec flippable_indices_line_sub8 myboard opboard (i,j) ret : int64 = 
@@ -72,7 +72,7 @@ let rec flippable_indices_line_sub8 myboard opboard (i,j) ret : int64 =
   else if (int64_get myboard (i*8+j)) then ret
   else 0x0L;;
 let flippable_indices_line8 (myboard : int64) (opboard : int64) ((i,j) : (int * int)) : int64 =
-  if i > 7 || j > 7 || (int64_get opboard (i*8+j) = false) then 0x0L
+  if i >= 7 || j >= 7 || (int64_get opboard (i*8+j) = false) then 0x0L
   else flippable_indices_line_sub8 myboard opboard (i+1,j+1) (int64_flip 0x0L (i*8+j));;
 
 let flippable_indices (myboard : int64) (opboard : int64) ((i,j) : (int * int)) : int64 =
@@ -105,7 +105,7 @@ let rec flippable_indices_count_line_sub1 myboard opboard (i,j) ret : int =
   else if (int64_get myboard (i*8+j)) then ret
   else 0;;
 let flippable_indices_count_line1 (myboard : int64) (opboard : int64) ((i,j) : (int * int)) : int =
-  if i < 0 || j < 0 || (int64_get opboard (i*8+j) = false) then 0
+  if i <= 0 || j <= 0 || (int64_get opboard (i*8+j) = false) then 0
   else flippable_indices_count_line_sub1 myboard opboard (i-1,j-1) 1;;
 
 let rec flippable_indices_count_line_sub2 myboard opboard (i,j) ret : int = 
@@ -114,7 +114,7 @@ let rec flippable_indices_count_line_sub2 myboard opboard (i,j) ret : int =
   else if (int64_get myboard (i*8+j)) then ret
   else 0;;
 let flippable_indices_count_line2 (myboard : int64) (opboard : int64) ((i,j) : (int * int)) : int =
-  if j < 0 || (int64_get opboard (i*8+j) = false) then 0
+  if j <= 0 || (int64_get opboard (i*8+j) = false) then 0
   else flippable_indices_count_line_sub2 myboard opboard (i,j-1) 1;;
 
 let rec flippable_indices_count_line_sub3 myboard opboard (i,j) ret : int = 
@@ -123,7 +123,7 @@ let rec flippable_indices_count_line_sub3 myboard opboard (i,j) ret : int =
   else if (int64_get myboard (i*8+j)) then ret
   else 0;;
 let flippable_indices_count_line3 (myboard : int64) (opboard : int64) ((i,j) : (int * int)) : int =
-  if i > 7 || j < 0 || (int64_get opboard (i*8+j) = false) then 0
+  if i >= 7 || j <= 0 || (int64_get opboard (i*8+j) = false) then 0
   else flippable_indices_count_line_sub3 myboard opboard (i+1,j-1) 1;;
 
 let rec flippable_indices_count_line_sub4 myboard opboard (i,j) ret : int = 
@@ -132,7 +132,7 @@ let rec flippable_indices_count_line_sub4 myboard opboard (i,j) ret : int =
   else if (int64_get myboard (i*8+j)) then ret
   else 0;;
 let flippable_indices_count_line4 (myboard : int64) (opboard : int64) ((i,j) : (int * int)) : int =
-  if i < 0 || (int64_get opboard (i*8+j) = false) then 0
+  if i <= 0 || (int64_get opboard (i*8+j) = false) then 0
   else flippable_indices_count_line_sub4 myboard opboard (i-1,j) 1;;
 
 let rec flippable_indices_count_line_sub5 myboard opboard (i,j) ret : int = 
@@ -141,7 +141,7 @@ let rec flippable_indices_count_line_sub5 myboard opboard (i,j) ret : int =
   else if (int64_get myboard (i*8+j)) then ret
   else 0;;
 let flippable_indices_count_line5 (myboard : int64) (opboard : int64) ((i,j) : (int * int)) : int =
-  if i > 7 || (int64_get opboard (i*8+j) = false) then 0
+  if i >= 7 || (int64_get opboard (i*8+j) = false) then 0
   else flippable_indices_count_line_sub5 myboard opboard (i+1,j) 1;;
 
 let rec flippable_indices_count_line_sub6 myboard opboard (i,j) ret : int = 
@@ -150,7 +150,7 @@ let rec flippable_indices_count_line_sub6 myboard opboard (i,j) ret : int =
   else if (int64_get myboard (i*8+j)) then ret
   else 0;;
 let flippable_indices_count_line6 (myboard : int64) (opboard : int64) ((i,j) : (int * int)) : int =
-  if i < 0 || j > 7 || (int64_get opboard (i*8+j) = false) then 0
+  if i <= 0 || j >= 7 || (int64_get opboard (i*8+j) = false) then 0
   else flippable_indices_count_line_sub6 myboard opboard (i-1,j+1) 1;;
 
 let rec flippable_indices_count_line_sub7 myboard opboard (i,j) ret : int = 
@@ -159,7 +159,7 @@ let rec flippable_indices_count_line_sub7 myboard opboard (i,j) ret : int =
   else if (int64_get myboard (i*8+j)) then ret
   else 0;;
 let flippable_indices_count_line7 (myboard : int64) (opboard : int64) ((i,j) : (int * int)) : int =
-  if j > 7 || (int64_get opboard (i*8+j) = false) then 0
+  if j >= 7 || (int64_get opboard (i*8+j) = false) then 0
   else flippable_indices_count_line_sub7 myboard opboard (i,j+1) 1;;
 
 let rec flippable_indices_count_line_sub8 myboard opboard (i,j) ret : int = 
@@ -168,7 +168,7 @@ let rec flippable_indices_count_line_sub8 myboard opboard (i,j) ret : int =
   else if (int64_get myboard (i*8+j)) then ret
   else 0;;
 let flippable_indices_count_line8 (myboard : int64) (opboard : int64) ((i,j) : (int * int)) : int =
-  if i > 7 || j > 7 || (int64_get opboard (i*8+j) = false) then 0
+  if i >= 7 || j >= 7 || (int64_get opboard (i*8+j) = false) then 0
   else flippable_indices_count_line_sub8 myboard opboard (i+1,j+1) 1;;
 
 (*

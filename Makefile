@@ -3,4 +3,4 @@ SOURCES=color.ml command.ml commandParser.mly commandLexer.mll const.ml paramete
 LIBS=unix 
 all: native-code
 
--include OCamlMakefile 
+-include OCamlMakefile

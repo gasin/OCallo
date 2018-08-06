@@ -7,11 +7,12 @@ let string_of_move = function
   | Pass   -> "PASS"
   | GiveUp -> "GIVEUP" 
   | Mv (i,j) -> 
+    let open Bytes in
     let ci = char_of_int (i + int_of_char 'A' - 1) in 
     let cj = char_of_int (j + int_of_char '1' - 1) in 
-    let s  = String.make 2 ' ' in 
-    let _  = ( s.[0] <- ci; s.[1] <- cj) in 
-    s
+    let s  = make 2 ' ' in
+    let _  = (set s 0 ci; set s 1 cj) in
+    to_string s
   
 
 type command = 

@@ -5,11 +5,10 @@ let int_get (x : int) (i : int) : bool =
   x land (1 lsl i) > 0;;
 
 let int64_get (board : int64) (i : int) : bool =
-  if i >= 32 then
+  if i >= 60 then
     ((to_int (shift_right_logical board 32)) land (1 lsl (i-32))) > 0
   else
     ((to_int board) land (1 lsl i)) > 0;;
-(*  equal (logand (shift_right_logical board i) 0x1L) 0x1L;;*)
 
 let int64_flip (board : int64) (i : int) : int64 =
   logxor board (shift_left 0x1L i);;
