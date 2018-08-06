@@ -80,7 +80,7 @@ let main () = (
     with End_this -> ();
     best := !simulation_score;
 
-    for u = 0 to 6 do (
+    for u = 0 to 100 do (
       print_int i; print_string " "; print_int u; print_newline ();
       simulation_score := 0;
       simulation_counter := 0;
