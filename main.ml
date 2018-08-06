@@ -62,7 +62,7 @@ let main () = (
   print_string "loaded\n";
   flush_all ();
   init ();
-  for i = 4 to 5 do (
+  for i = 0 to 6 do (
     min_stone := stage.(i).(0);
     max_stone := stage.(i).(1);
 
@@ -71,7 +71,7 @@ let main () = (
     Hashtbl.iter translate joseki_table;
     best := !simulation_score;
 
-    for u = 0 to 50 do (
+    for u = 0 to 100 do (
       print_int i; print_string " "; print_int u; print_newline ();
       simulation_score := 0;
       simulation_counter := 0;
