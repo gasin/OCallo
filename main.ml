@@ -23,13 +23,12 @@ let translate (myboard,opboard) ans : unit =
   if stones < !min_stone || stones >= !max_stone then ()
   else
   (simulation_counter := !simulation_counter + 1;
-  if !simulation_counter mod 1000 = 0 then
+  if !simulation_counter mod 100000 = 0 then
       (print_int !simulation_score;
       print_string " / ";
       print_int !simulation_counter;
       print_string "\n";
       flush_all ();
-      raise End_this
       )
   else ();
   let now_best = deep_search myboard opboard search_depth in
