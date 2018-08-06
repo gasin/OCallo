@@ -26,7 +26,6 @@ let rec read_param chan i num posi counter : unit =
         next_put_corner_weight.(i) <- signed_num
       else
         corner_weight.(i).((counter-4) / 16).((counter-4) mod 16) <- signed_num);
-      print_int signed_num; print_newline ();
       read_param chan i iinf true (counter+1))
 
 
@@ -34,6 +33,5 @@ let loading_parameters () : unit =
   for i=0 to 6 do
     let chan = open_in ("./data/stage" ^ (string_of_int i) ^ ".txt") in
     (try read_param chan i iinf true 0 with End_of_file -> ();
-    print_newline ();
     close_in chan)
   done
