@@ -9,7 +9,7 @@ int main() {
     int skip = 0;
     while (ifs >> str1 >> str2 >> str3) {
         skip++;
-        if (skip%2) continue;
+        if (skip%4) continue;
         int cnt = 0;
         int val = 0;
         int len = 0;
