@@ -23,6 +23,6 @@ Just list what I implemented
 et cetera 
 
 ## Strength
-Maybe not so weak but not amazingly strong
-last search depth  ... 19 
+Maybe not so weak but not amazingly strong  
+last search depth  ... 19  
 other search depth ... 8  
