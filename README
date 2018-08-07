@@ -1,6 +1,27 @@
-Reversi Client 
+OCallo
 --------------
 
-Homework  
+This is reversi client for IS's task  
+Server program is needed (not uploaded cuz idk whether it's public)  
 
-Reversi AI written in OCaml (I wanted to write this with C++.....)
+## Usage
+```
+./reversi -H [ip address] -p [port number] -n [name]
+```
+
+## Description
+Just list what I implemented
+
+- bitboard 
+- fast-first search 
+- opening book 
+- negascout method 
+- transposition table 
+- last one hand optimization 
+- parameter tuning 
+et cetera 
+
+## Strength
+Maybe not so weak but not amazingly strong
+last search depth  ... 19 
+other search depth ... 8  
