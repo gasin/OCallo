@@ -6,6 +6,7 @@ Server program is needed (not uploaded cuz idk whether it's public)
 
 ## Usage
 ```
+cd bin
 ./reversi -H [ip address] -p [port number] -n [name]
 ```
 
@@ -18,7 +19,7 @@ Just list what I implemented
 - negascout method 
 - transposition table 
 - last one hand optimization 
-- parameter tuning 
+- parameter tuning  
 et cetera 
 
 ## Strength
