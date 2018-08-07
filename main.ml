@@ -74,9 +74,7 @@ let main () = (
 
     simulation_score := 0;
     simulation_counter := 0;
-    try
     Hashtbl.iter translate joseki_table;
-    with End_this -> ();
     best := !simulation_score;
 
     for u = 0 to 100 do (
@@ -122,9 +120,7 @@ let main () = (
           else ())
         done
       done;
-      try
       Hashtbl.iter translate joseki_table;
-      with End_this -> ();
       if !simulation_score > !best then
         let chan = open_out_gen [Open_wronly; Open_append; Open_creat] 0o666 ("./data/new_stage" ^ (string_of_int i) ^ "-score.txt") in (
           output_string chan ((string_of_int !simulation_score) ^ " / " ^ (string_of_int !simulation_counter) ^ "\n");
